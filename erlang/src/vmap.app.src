@@ -1,0 +1,12 @@
+{application, vmap,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { vmap_app, []}},
+  {env, []}
+ ]}.
