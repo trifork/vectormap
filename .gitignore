@@ -1,0 +1,6 @@
+.eunit
+erlang/doc
+*.beam
+*~
+
+
