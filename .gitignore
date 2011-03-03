@@ -4,3 +4,9 @@ erlang/doc
 *~
 
 
+*.class
+java/.settings
+java/bin
+java/src/main/gen
+java/target
+erlang/ebin
