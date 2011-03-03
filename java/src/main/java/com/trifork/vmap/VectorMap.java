@@ -115,6 +115,8 @@ public class VectorMap {
 			throws UnsupportedFlavorException, IOException {
 
 		VEntry enc = content.get(key);
+		if (enc == null)
+			return null;
 		DataSource encodedValue = enc.values[0];
 		if (encodedValue == null)
 			return null;
