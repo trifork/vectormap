@@ -77,7 +77,7 @@ public class PBDecoder {
 	}
 
 	private static DataSource decodeValue(PBValue value, PBVectorMap vm) {
-		if (value.hasDeleted() && value.getDeleted() == true)
+		if (value.getContent() == null)
 			return null;
 		return new BSDataSource(vm.getStringPool(value.getMimeType()), value
 				.getContent());

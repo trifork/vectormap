@@ -101,7 +101,7 @@ public class PBEncoder {
 		eb.setClock( clock_pool.get( ve.vClock )  );
 		for (DataSource o : ve.values) {
 			if (o == null) {
-				eb.addValues(PBValue.newBuilder().setDeleted(true));
+				eb.addValues(PBValue.newBuilder()); // With no content.
 			} else {
 				Output oo = ByteString.newOutput();
 				IO.copystream(o.getInputStream(), oo);
