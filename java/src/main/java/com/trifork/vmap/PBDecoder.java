@@ -21,10 +21,6 @@ public class PBDecoder {
 
 		PBVectorMap vm = PBVectorMap.parseFrom(in);
 
-		if (vm.getKeysCount() != vm.getEntriesCount()) {
-			throw new IOException("keyCount != entryCount");
-		}
-
 		VClock[] clocks = new VClock[vm.getClockPoolCount()];
 		for (int i = 0; i < vm.getClockPoolCount(); i++) {
 			clocks[i] = decodeVClock(vm.getClockPool(i), vm);
@@ -34,7 +30,7 @@ public class PBDecoder {
 		for (int i = 0; i < vm.getEntriesCount(); i++) {
 			PBEntry ent = vm.getEntries(i);
 			VEntry e = decode(ent, clocks, vm);
-			map.put(vm.getKeys(i), e);
+			map.put(ent.getKey(), e);
 		}
 
 		return new VectorMap(map);
