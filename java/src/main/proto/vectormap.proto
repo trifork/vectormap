@@ -55,6 +55,5 @@ message PBEntry {
 message PBValue {
    optional uint32 mime_type = 1;
    optional bytes  content   = 2;
-   optional bool   deleted   = 3 [ default = false ];
 }
 
