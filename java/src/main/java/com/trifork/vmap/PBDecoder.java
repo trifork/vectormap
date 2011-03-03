@@ -8,8 +8,6 @@ import java.util.Map;
 import javax.activation.DataSource;
 
 import com.trifork.activation.BSDataSource;
-import com.trifork.mime.MIMEDecoder;
-import com.trifork.mime.MIMETranscoder;
 import com.trifork.vmap.VectorMap.VEntry;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBEntry;
@@ -17,9 +15,8 @@ import com.trifork.vmap.protobuf.PB.PBValue;
 import com.trifork.vmap.protobuf.PB.PBVectorMap;
 
 /** Utility to read from application/x-protobuf;proto=vectormap byte stream */
-public class PBDecoder extends MIMEDecoder<VectorMap> {
+public class PBDecoder {
 
-	@Override
 	public VectorMap decode(InputStream in) throws IOException {
 
 		PBVectorMap vm = PBVectorMap.parseFrom(in);

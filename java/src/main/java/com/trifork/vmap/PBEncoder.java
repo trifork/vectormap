@@ -11,8 +11,6 @@ import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteString.Output;
 import com.trifork.activation.IO;
-import com.trifork.mime.MIMEEncoder;
-import com.trifork.mime.MIMEObject;
 import com.trifork.vmap.VectorMap.VEntry;
 import com.trifork.vmap.protobuf.PB;
 import com.trifork.vmap.protobuf.PB.PBClock;
@@ -20,15 +18,13 @@ import com.trifork.vmap.protobuf.PB.PBValue;
 import com.trifork.vmap.protobuf.PB.PBVectorMap;
 
 
-public class PBEncoder extends MIMEEncoder<VectorMap> {
+public class PBEncoder {
 
-	@Override
 	public byte[] encode(VectorMap map) throws IOException {
 		AbstractMessage msg = toMessage(map);
 		return msg.toByteArray();		
 	}
 
-	@Override
 	public void write(VectorMap map, OutputStream out) throws IOException {
 		AbstractMessage msg = toMessage(map);
 		msg.writeTo(out);

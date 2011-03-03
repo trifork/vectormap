@@ -171,6 +171,10 @@ public class VectorMap {
 		put(key, "text/plain;charset=utf-8", string);
 	}
 
+	public void put(String key, byte[] data) throws IOException {
+		put(key, "application/binary", data);
+	}
+
 	public void put(String key, String mimeType, Object value)
 			throws IOException {
 		put(key, new DataHandler(value, mimeType).getDataSource());
