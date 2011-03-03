@@ -1,0 +1,60 @@
+/* -------------------------------------------------------------------
+**
+** riakclient.proto: Protocol buffers for riak
+**
+** Copyright (c) 2011 Trifork A/S.  All Rights Reserved.
+**
+** This file is provided to you under the Apache License,
+** Version 2.0 (the "License"); you may not use this file
+** except in compliance with the License.  You may obtain
+** a copy of the License at
+**
+**   http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing,
+** software distributed under the License is distributed on an
+** "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+** KIND, either express or implied.  See the License for the
+** specific language governing permissions and limitations
+** under the License.
+**
+** -------------------------------------------------------------------
+*/
+
+option java_package = "com.trifork.vmap.protobuf";
+option java_outer_classname = "PB";
+
+
+//
+// Package this as
+//
+//  Content-Type: application/x-protobuf;proto=vectormap
+//
+//
+
+message PBVectorMap {
+   repeated string  string_pool = 1;
+   repeated PBClock clock_pool  = 2;
+   
+   repeated string  keys        = 3;
+   repeated PBEntry entries     = 4;
+}
+
+message PBClock {
+  repeated uint32 node       = 1;
+  repeated uint32 counter    = 2; 
+  repeated uint64 utc_millis = 3;
+}
+
+message PBEntry {
+	required uint32 clock    = 1;
+	repeated PBValue values  = 2;
+}
+
+// a Value contains *either* a mime_type+content *or* deleted=true
+message PBValue {
+   optional uint32 mime_type = 1;
+   optional bytes  content   = 2;
+   optional bool   deleted   = 3 [ default = false ];
+}
+
