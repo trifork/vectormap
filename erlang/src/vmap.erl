@@ -13,42 +13,13 @@
 -module(vmap).
 -author("Kresten Krab Thorup <krab@trifork.com>").
 
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
-
 -define(TOMBSTONE_SHA, 
 	<<1,100,93,2,115,107,139,136,90,5,162,35,72,251,129,155,198,155,143,204>>).
 
+-include("vmap_internal.hrl").
 
--record(vmap, { 
-	  dict = vdict_new() :: vdict(),
-	  update_peer :: peer(),
-	  hash :: hash()
-	 }).
-
--record(vobj, {
-	  vclock :: vclock(),
-	  values :: [ datum() ]
-	 }).
-
--record(vmime, { 
-	  mime_type :: binary(),
-	  hash      :: hash(), 
-	  body      :: binary()
-	 }).
-
--type key()    :: binary().
--type vdict()  :: [{ key(), vobj() }].
--type vmap()   :: #vmap{}.
--type vobj()   :: #vobj{}.
--type datum()  :: #vmap{} | #vmime{} | tombstone. 
--type hash()   :: <<_:20>>.
--type clock()  :: { peer(), integer(), integer() }.
--type vclock() :: [ clock() ].
--type peer()   :: binary().
-
--export([new/1, set_update_peer/2, find/2, foldl/3, delete/2, add/2, store/3, conflicts/1, merge/2, keys/1]).
+-export([new/1, set_update_peer/2, find/2, foldl/3, delete/2, add/2, store/3, conflicts/1, merge/2, keys/1, vmap_ensure_hash/1]).
+-export([datum_hash/1]).
 
 new(Peer) ->
     #vmap{ update_peer=to_peer(Peer) }.
@@ -98,7 +69,7 @@ conflicts(#vmap{dict=VDict}) ->
 
 -spec delete(Key::key(), VMap::vmap()) -> vmap().
 delete(Key, VMap) ->
-    store(Key, tombstone, VMap).
+    do_store(Key, tombstone, VMap).
 
 add(#vmap{}=Datum, VMap) ->
     VM = vmap_ensure_hash(Datum),
@@ -106,25 +77,26 @@ add(#vmap{}=Datum, VMap) ->
 add(Datum,VMap) ->
     store(datum_hash(Datum), Datum, VMap).
 
-store(Key, #vmime{}=Value, VMap) ->
-    do_store(Key,Value,VMap);
+-spec store( binary(),   
+	       integer() | float()
+	     | string() | binary()
+	     | vmap() 
+	     | {mime, binary(), binary()}
+	     | tombstone,
+	     vmap()) -> vmap().
+
+store(Key, {mime,ContentType,Body}, VMap) ->
+    do_store(Key,#vmime{mime_type=ContentType,body=Body},VMap);
 store(Key, #vmap{}=Value, VMap) ->
     do_store(Key,Value,VMap);
-store(Key, tombstone, VMap) ->
-    do_store(Key,tombstone,VMap);
-store(Key, <<Binary/binary>>, VMap) ->
-    do_store(Key,
-	     #vmime{ mime_type= <<"application/binary">>, 
-		     hash=crypto:sha(Binary), 
-		     body=Binary},
-	     VMap);
-store(Key, String, VMap) when is_list(String) ->
-    Binary = unicode:characters_to_binary(String,latin1,utf8),
-    do_store(Key,
-	     #vmime{ mime_type= <<"text/plain;charset=utf-8">>, 
-		     hash=crypto:sha(Binary), 
-		     body=Binary},
-	     VMap).
+store(Key, AM, VMap) when is_atom(AM) ->
+    do_store(Key, erlang:atom_to_binary(AM) ,VMap);
+store(Key, B, VMap) when is_binary(B) ->
+    do_store(Key, B ,VMap);
+store(Key, List, VMap) when is_list(List) ->
+    do_store(Key, list_to_binary(List) ,VMap).
+
+
 
 -spec do_store(Key :: key(), Value::datum(), VMap::vmap()) -> vmap().
 do_store(Key, Value, #vmap{ update_peer=Peer, dict=Dict }=VMap) when Peer =/= undefined ->
@@ -232,8 +204,11 @@ vmap_digest(#vmap{dict=Dict}, Context) ->
     SDict = lists:sort(fun({Key1,_},{Key2,_}) -> Key1 =< Key2 end, Dict),
     lists:foldl(fun vmap_digest_key_value/2, Context, SDict).
 
+sha_update(CTX,Val) ->
+    crypto:sha_update(CTX,Val).
+
 vmap_digest_key_value({Key,#vobj{ vclock=VClock, values=Values}}, Context) ->
-    C1 = crypto:sha_update(Context, Key),
+    C1 = sha_update(Context, Key),
     C2 = vmap_digest_data(C1, Values),
     vmap_digest_vclock(C2, VClock).
 
@@ -245,7 +220,9 @@ vmap_digest_data(Context, Values) ->
     lists:foldl(fun vmap_digest_datum/2, Context, SValues).
 
 vmap_digest_datum(Datum, Context) ->
-    crypto:sha_update(Context, datum_hash(Datum) ).
+    DH = datum_hash(Datum),
+%    io:format("DH=~w D=~w~n", [DH,Datum]),
+    sha_update(Context, DH ).
 
 vmap_digest_vclock(Context, VClock) ->
     SVClock = lists:sort(fun({Peer1,_,_},{Peer2,_,_}) -> 
@@ -255,9 +232,9 @@ vmap_digest_vclock(Context, VClock) ->
     lists:foldl(fun vmap_digest_clock/2, Context, SVClock).
 
 vmap_digest_clock({Peer,Count,Time}, C0) ->
-    C1 = crypto:sha_update(C0, Peer),
-    C2 = crypto:sha_update(C1, integer_to_list(Count)),
-         crypto:sha_update(C2, integer_to_list(Time)).
+    C1 = sha_update(C0, Peer),
+    C2 = sha_update(C1, list_to_binary(integer_to_list(Count))),
+         sha_update(C2, list_to_binary(integer_to_list(Time))).
 
 
 -spec datum_hash(Datum :: datum()) -> hash().
@@ -266,8 +243,15 @@ datum_hash(#vmap{hash=undefined}=VMap) ->
     VMap2#vmap.hash;
 datum_hash(#vmap{hash=Hash}) ->
     Hash;
-datum_hash(#vmime{hash=Hash}) ->
+datum_hash(#vmime{hash=Hash}) when Hash =/= undefined ->
     Hash;
+datum_hash(#vmime{mime_type= <<_/binary>>=ContentType, body= <<_/binary>>=Body}) ->
+    C0 = crypto:sha_init(),
+    C1 = crypto:sha_update(C0, ContentType),
+    C2 = crypto:sha_update(C1, Body),
+    crypto:sha_final(C2);
+datum_hash(Binary) when is_binary(Binary) ->
+    crypto:sha(Binary);
 datum_hash(tombstone) ->
     ?TOMBSTONE_SHA.
 
@@ -359,9 +343,6 @@ vclock_lub([{Peer,_,_}|_]=VClock, [{Peer2,_,_}=Clock2|Rest2]) when Peer2 < Peer 
 
 %%% vdict ADT
 
-
-vdict_new() ->
-    [].
 
 -spec vdict_find(Key::key(), Dict::vdict()) -> vobj() | notfound.
 vdict_find(Key,Dict) ->
@@ -458,7 +439,7 @@ vmap_test() ->
     notfound = find(<<"X">>,MD),
     notfound = find(<<"Z">>,MD),
 
-    ["test-ÆØÅ"] = find(<<"Y">>, MD),		
+    [<<"test-ÆØÅ">>] = find(<<"Y">>, MD),		
 
     ME = store(<<"X">>, "foobar", MB),
     MM = merge(MC, ME),
