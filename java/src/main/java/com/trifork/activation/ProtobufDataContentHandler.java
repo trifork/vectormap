@@ -7,8 +7,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.activation.ActivationDataFlavor;
+import javax.activation.CommandMap;
 import javax.activation.DataContentHandler;
+import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.activation.MailcapCommandMap;
 
 import com.google.protobuf.AbstractMessage;
 import com.trifork.vmap.PBDecoder;
@@ -80,4 +83,9 @@ public class ProtobufDataContentHandler implements DataContentHandler {
 		throw new IOException("Cannot encode");
 	}
 
+	public static void install() {
+		CommandMap m = CommandMap.getDefaultCommandMap();
+		MailcapCommandMap mcm = (MailcapCommandMap) m;
+		mcm.addMailcap("application/x-protobuf; ; x-java-content-handler="+ProtobufDataContentHandler.class.getName());
+	}
 }
