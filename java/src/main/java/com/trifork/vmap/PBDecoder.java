@@ -40,7 +40,7 @@ public class PBDecoder {
 			throws IOException {
 
 		if (pbc.getCounterCount() != pbc.getNodeCount()
-				|| pbc.getCounterCount() != pbc.getUtcMillisCount()) {
+				|| pbc.getCounterCount() != pbc.getUtcSecsCount()) {
 			throw new IOException("bad vclock encoding");
 		}
 
@@ -48,12 +48,12 @@ public class PBDecoder {
 
 		String[] peers = new String[length];
 		int[] counters = new int[length];
-		long[] times = new long[length];
+		int[] times = new int[length];
 
 		for (int i = 0; i < length; i++) {
 			peers[i] = vm.getStringPool(pbc.getNode(i));
 			counters[i] = pbc.getCounter(i);
-			times[i] = pbc.getUtcMillis(i);
+			times[i] = pbc.getUtcSecs(i);
 		}
 
 		return new VClock(peers, counters, times);

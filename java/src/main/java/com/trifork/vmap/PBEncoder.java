@@ -72,7 +72,7 @@ public class PBEncoder {
 			for (int p = 0; p < c.peers.length; p++) {
 				cb.addNode(string_pool.get(c.peers[p]));
 				cb.addCounter(c.counters[p]);
-				cb.addUtcMillis(c.utc_millis[p]);				
+				cb.addUtcSecs(c.utc_secs[p]);				
 			}
 			
 			builder.addClockPool(cb);

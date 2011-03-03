@@ -39,13 +39,15 @@ message PBVectorMap {
    repeated PBEntry entries     = 4;
 }
 
+// a vector clock, encoded as 
 message PBClock {
   repeated uint32 node       = 1;
   repeated uint32 counter    = 2; 
-  repeated uint64 utc_millis = 3;
+  repeated uint32 utc_secs   = 3;
 }
 
-// An entry in a 
+// An entry in a vector map
+// clock comes from the clock_pool
 message PBEntry {
     required string key      = 1;
 	required uint32 clock    = 2;
