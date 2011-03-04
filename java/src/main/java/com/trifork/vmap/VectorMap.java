@@ -88,7 +88,7 @@ public class VectorMap {
 		Time thisTime = max.get(thisPeer);
 		if (thisTime == null) {
 			max.put(thisPeer,
-					thisTime = new Time(1, System.currentTimeMillis()));
+					thisTime = new Time(1, (int) (System.currentTimeMillis()/1000)));
 		} else {
 			max.put(thisPeer, thisTime = thisTime.increment());
 		}
@@ -115,6 +115,8 @@ public class VectorMap {
 			throws UnsupportedFlavorException, IOException {
 
 		VEntry enc = content.get(key);
+		if (enc == null)
+			return null;
 		DataSource encodedValue = enc.values[0];
 		if (encodedValue == null)
 			return null;

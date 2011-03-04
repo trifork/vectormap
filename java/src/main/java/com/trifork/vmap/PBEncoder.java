@@ -72,7 +72,7 @@ public class PBEncoder {
 			for (int p = 0; p < c.peers.length; p++) {
 				cb.addNode(string_pool.get(c.peers[p]));
 				cb.addCounter(c.counters[p]);
-				cb.addUtcMillis(c.utc_millis[p]);				
+				cb.addUtcSecs(c.utc_secs[p]);				
 			}
 			
 			builder.addClockPool(cb);
@@ -84,11 +84,8 @@ public class PBEncoder {
 			String key = ent.getKey();
 			VectorMap.VEntry ve = ent.getValue();
 			
-			// encode the key
-			builder.addKeys(key);
-			
 			// encode the value						
-			PB.PBEntry.Builder eb = encodeEntry(string_pool, clock_pool, ve);
+			PB.PBEntry.Builder eb = encodeEntry(string_pool, clock_pool, key, ve);
 			builder.addEntries(eb);
 		}
 	
@@ -96,8 +93,9 @@ public class PBEncoder {
 	}
 
 	public static PB.PBEntry.Builder encodeEntry(Map<String, Integer> string_pool,
-			Map<VClock, Integer> clock_pool, VectorMap.VEntry ve) throws IOException {
+			Map<VClock, Integer> clock_pool, String key, VectorMap.VEntry ve) throws IOException {
 		PB.PBEntry.Builder eb = PB.PBEntry.newBuilder();
+		eb.setKey(key);
 		eb.setClock( clock_pool.get( ve.vClock )  );
 		for (DataSource o : ve.values) {
 			if (o == null) {

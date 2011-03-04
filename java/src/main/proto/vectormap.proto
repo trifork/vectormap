@@ -36,22 +36,27 @@ message PBVectorMap {
    repeated string  string_pool = 1;
    repeated PBClock clock_pool  = 2;
    
-   repeated string  keys        = 3;
    repeated PBEntry entries     = 4;
 }
 
+// a vector clock, encoded as 
 message PBClock {
   repeated uint32 node       = 1;
   repeated uint32 counter    = 2; 
-  repeated uint64 utc_millis = 3;
+  repeated uint32 utc_secs   = 3;
 }
 
+// An entry in a vector map
+// clock comes from the clock_pool
 message PBEntry {
-	required uint32 clock    = 1;
-	repeated PBValue values  = 2;
+    required string key      = 1;
+	required uint32 clock    = 2;
+	repeated PBValue values  = 3;
 }
 
-// a Value contains *either* a mime_type+content *or* deleted=true
+// a Value contains *either* a mime_type+content *or* neither 
+// signifying a tombstone (deleted value).  mime_type comes
+// from the string_pool
 message PBValue {
    optional uint32 mime_type = 1;
    optional bytes  content   = 2;
