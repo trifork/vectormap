@@ -47,13 +47,14 @@ public class VClock {
 		}
 	}
 
-	public void updateMax(Map<String, Time> max) {
+	public Map<String, Time> updateMax(Map<String, Time> max) {
 		for (int i = 0; i < peers.length; i++) {
 			Time t = max.get(peers[i]);
 			if (t == null || counters[i] > t.count) {
 				max.put(peers[i], new Time(counters[i], utc_secs[i]));
 			}
 		}
+		return max;
 	}
 
 	public void timeStamp(String peer) {
@@ -63,6 +64,22 @@ public class VClock {
 				break;
 			}
 		}
+	}
+
+	public String toString() {
+		StringBuilder sb = new StringBuilder("[");
+		boolean first = true;
+		for (int i = 0; i < peers.length; i++) {
+			if (!first) sb.append(","); else first=false;
+			sb.append("{").
+				append(peers[i]).
+				append(",").
+				append(counters[i]).
+				append(",").
+				append(utc_secs[i]). // TODO: format as datetime?
+				append("}");
+		}
+		return sb.append("]").toString();
 	}
 
 }
