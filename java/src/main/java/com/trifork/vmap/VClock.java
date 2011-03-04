@@ -33,6 +33,11 @@ public class VClock {
 		}
 	}
 
+	public VClock(Map<String, Time> map) {
+		this((Entry<String, Time>[]) (map.entrySet().toArray(new Entry[map.size()])));
+	}
+
+
 	public static class Time {
 		final int count;
 		final int time;
@@ -52,14 +57,26 @@ public class VClock {
 			return (count==other.count &&
 					time ==other.time);
 		}
+
+		public String toString() {
+			return "Time("+count+","+time+")";
+		}
 	}
 
 	public Map<String, Time> updateMax(Map<String, Time> max) {
 		for (int i = 0; i < peers.length; i++) {
 			Time t = max.get(peers[i]);
-			if (t == null || counters[i] > t.count) {
-				max.put(peers[i], new Time(counters[i], utc_secs[i]));
+
+			int new_count = t==null ? 0 : t.count;
+			int new_time  = t==null ? 0 : t.time;
+			boolean update = false;
+			if (new_count < counters[i]) {
+				new_count = counters[i]; update = true;
 			}
+			if (new_time < utc_secs[i]) {
+				new_time = utc_secs[i]; update = true;
+			}
+			if (update) max.put(peers[i], new Time(new_count, new_time));
 		}
 		return max;
 	}
