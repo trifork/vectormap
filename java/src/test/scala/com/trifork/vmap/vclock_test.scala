@@ -61,15 +61,20 @@ class VClockTest extends JUnit4(VClockSpec) {
 
 
 object VClockSpec extends Specification with Generators with ScalaCheck {
+  def maxOf2(a:VClock, b:VClock) =
+    b.updateMax(a.updateMax(new HashMap()));
+
   val updateMaxIsCommutative = 
-    (vc1:VClock, vc2:VClock) =>
-      (vc2.updateMax(vc1.updateMax(new HashMap())) ==
-	vc1.updateMax(vc2.updateMax(new HashMap())));
+    (vc1:VClock, vc2:VClock) => maxOf2(vc1, vc2) == maxOf2(vc2, vc1);
+
+  val updateMaxIsAssociative = 
+    (vc1:VClock, vc2:VClock, vc3:VClock) => 
+      (maxOf2(vc1, new VClock(maxOf2(vc2, vc3))) ==
+	maxOf2(new VClock(maxOf2(vc1, vc2)), vc3));
+ 
 
   "VClock.updateMax()" should {
-    "be commutative" in {
-      (forAll(updateMaxIsCommutative) must pass)
-     
-    }
+    "be commutative" >> {(forAll(updateMaxIsCommutative) must pass)}
+    "be associative" >> {(forAll(updateMaxIsAssociative) must pass)}
   }
 }
