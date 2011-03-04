@@ -1,4 +1,3 @@
-VectorMap = (() -> (  
 
  max_clock = (c1,c2) ->
        if c1[0] >= c2[0]  
@@ -6,8 +5,11 @@ VectorMap = (() -> (
        else  
          c2 
 
+ missing = (o) ->
+      `o == null || (typeof o) == "undefined"` 
+
  add_one_peer = (out, peer, c) ->
-       if (out[peer]?) 
+       if ( !missing(out[peer]) ) 
           out[peer] = max_clock(c, out[peer])
        else
           out[peer] = c
@@ -22,14 +24,20 @@ VectorMap = (() -> (
      add_one_vc(out, vc) for vc in vcs
      out
 
+ utc_secs = () -> Math.floor(new Date().getTime() / 1000)
+
+ clone = (o) ->
+   res = {}
+   res[k] = o[k] for k in o
+   res
 
  vclock_increment = (vc, peer) ->
-     out =  if vc? then vc.clone else {}
+     out =  if !missing(vc) then clone(vc) else {}
      c = out[peer]
-     if c != null
-       out[peer] = [c[0]+1, Date.getTime()/1000]
+     if !missing(c)
+       out[peer] = [c[0]+1, utc_secs()]
      else
-       out[peer] = [1, Date.getTime()/1000]
+       out[peer] = [1, utc_secs()]
      out
 
 
@@ -49,9 +57,9 @@ VectorMap = (() -> (
        return Sha1.hash("text/plain;charset=utf8" + any, true)
        
      when "object"
-       if any._vmeta? 
+       if !missing(any._vmeta)
           hashVMap(any)
-       else if any._mime?
+       else if !missing(any._mime)
           bin = Base64.decode(any.base64)
           return Sha1.hash(any._mime + bin, false)
        else
@@ -67,18 +75,20 @@ VectorMap = (() -> (
  # returns true if the value changed
  updateKey = (vmap,key,editVC) ->
 
-   if (mo=vmap._meta[key])?
+   if !missing(mo=vmap._vmeta[key])
       # did know about key
+
+      print("key " + key + " was known")
 
       if mo.deleted == true    
          # was deleted
  
-         if vmap[key]?
+         if !missing(vmap[key])
 
             # has been resurrected
             delete mo.deleted   
             mo.vclock = editVC
-            mo.hash = compute_hash(vmap[key])
+            mo.hash = computeHash(vmap[key])
             return true
 
          #  ... and is still deleted
@@ -91,7 +101,7 @@ VectorMap = (() -> (
          return true
        
       # still exists
-      new_hash = compute_hash(vmap[key])
+      new_hash = computeHash(vmap[key])
 
       if new_hash == mo.hash # no sweat, nothing happened
         return false
@@ -101,8 +111,15 @@ VectorMap = (() -> (
       return true
 
    else
-      vmap._meta[key].hash = compute_hash(vmap[key])
-      vmap._meta[key].vclock = editVC
+
+      print("key " + key + " was NOT known")
+
+      vmap._vmeta[key] = ( 
+         orig: vmap[key]
+         hash: computeHash(vmap[key])
+         vclock: editVC
+      )
+      
       return true
              
  hexDecode = (str) ->
@@ -115,24 +132,26 @@ VectorMap = (() -> (
    string += (hexDecode(vmap._vmeta[key].hash)+"\n") for key in mapKeys.sort()
    Sha1.hash(string, false)
 
- updateEdits: (vmap, peerID) ->
+ (exports ? this).VectorMap = {
+  updateEdits: (vmap, peerID) ->
    vmeta = vmap['_vmeta']
    vmeta = (vmap['_vmeta']={}) if !vmeta 
    
-   mapKeys = key for key of vmap when key != '_vmeta'
-   metaKeys = key for key of vmeta 
+   mapKeys = (key for key of vmap when key != '_vmeta')
+   metaKeys = (key for key of vmeta)
 
    metaVClocks = (vmeta[key].vclock for key in metaKeys)
    maxVC = vclock_lub(metaVClocks...)
    editVC = vclock_increment(maxVC, peerID) 
-   allKeys = mapKeys.union(metaKeys)
+   allKeys = mapKeys
 
    changed = false
-   changed |= updateKey(vmap,key,editVC) for key of allKeys
+   changed |= updateKey(vmap,key,editVC) for key in allKeys
+
+   print JSON.stringify(mapKeys)
+   print JSON.stringify(vmap)
 
    if changed
       updateVMapHash(vmap, mapKeys)
    vmap
-
-))()
-
+ }

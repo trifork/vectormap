@@ -1,9 +1,6 @@
-## generated from vmap.coffee
-
-var VectorMap;
-var __slice = Array.prototype.slice;
-VectorMap = (function() {
-  var add_one_peer, add_one_vc, computeHash, hashVMap, hexDecode, max_clock, updateKey, updateVMapHash, vclock_increment, vclock_lub;
+(function() {
+  var add_one_peer, add_one_vc, clone, computeHash, hashVMap, hexDecode, max_clock, missing, updateKey, updateVMapHash, utc_secs, vclock_increment, vclock_lub;
+  var __slice = Array.prototype.slice;
   max_clock = function(c1, c2) {
     if (c1[0] >= c2[0]) {
       return c1;
@@ -11,8 +8,11 @@ VectorMap = (function() {
       return c2;
     }
   };
+  missing = function(o) {
+    return o == null || (typeof o) == "undefined";
+  };
   add_one_peer = function(out, peer, c) {
-    if ((out[peer] != null)) {
+    if (!missing(out[peer])) {
       return out[peer] = max_clock(c, out[peer]);
     } else {
       return out[peer] = c;
@@ -36,14 +36,26 @@ VectorMap = (function() {
     }
     return out;
   };
+  utc_secs = function() {
+    return Math.floor(new Date().getTime() / 1000);
+  };
+  clone = function(o) {
+    var k, res, _i, _len;
+    res = {};
+    for (_i = 0, _len = o.length; _i < _len; _i++) {
+      k = o[_i];
+      res[k] = o[k];
+    }
+    return res;
+  };
   vclock_increment = function(vc, peer) {
     var c, out;
-    out = vc != null ? vc.clone : {};
+    out = !missing(vc) ? clone(vc) : {};
     c = out[peer];
-    if (c !== null) {
-      out[peer] = [c[0] + 1, Date.getTime() / 1000];
+    if (!missing(c)) {
+      out[peer] = [c[0] + 1, utc_secs()];
     } else {
-      out[peer] = [1, Date.getTime() / 1000];
+      out[peer] = [1, utc_secs()];
     }
     return out;
   };
@@ -58,9 +70,9 @@ VectorMap = (function() {
       case "boolean":
         return Sha1.hash("text/plain;charset=utf8" + any, true);
       case "object":
-        if (any._vmeta != null) {
+        if (!missing(any._vmeta)) {
           return hashVMap(any);
-        } else if (any._mime != null) {
+        } else if (!missing(any._mime)) {
           bin = Base64.decode(any.base64);
           return Sha1.hash(any._mime + bin, false);
         } else {
@@ -76,12 +88,13 @@ VectorMap = (function() {
   };
   updateKey = function(vmap, key, editVC) {
     var mo, new_hash;
-    if ((mo = vmap._meta[key]) != null) {
+    if (!missing(mo = vmap._vmeta[key])) {
+      print("key " + key + " was known");
       if (mo.deleted === true) {
-        if (vmap[key] != null) {
+        if (!missing(vmap[key])) {
           delete mo.deleted;
           mo.vclock = editVC;
-          mo.hash = compute_hash(vmap[key]);
+          mo.hash = computeHash(vmap[key]);
           return true;
         }
         return false;
@@ -92,7 +105,7 @@ VectorMap = (function() {
         mo.vclock = editVC;
         return true;
       }
-      new_hash = compute_hash(vmap[key]);
+      new_hash = computeHash(vmap[key]);
       if (new_hash === mo.hash) {
         return false;
       }
@@ -100,8 +113,12 @@ VectorMap = (function() {
       mo.vclock = editVC;
       return true;
     } else {
-      vmap._meta[key].hash = compute_hash(vmap[key]);
-      vmap._meta[key].vclock = editVC;
+      print("key " + key + " was NOT known");
+      vmap._vmeta[key] = {
+        orig: vmap[key],
+        hash: computeHash(vmap[key]),
+        vclock: editVC
+      };
       return true;
     }
   };
@@ -120,21 +137,31 @@ VectorMap = (function() {
     }
     return Sha1.hash(string, false);
   };
-  return {
+  (typeof exports != "undefined" && exports !== null ? exports : this).VectorMap = {
     updateEdits: function(vmap, peerID) {
-      var allKeys, changed, editVC, key, mapKeys, maxVC, metaKeys, metaVClocks, vmeta;
+      var allKeys, changed, editVC, key, mapKeys, maxVC, metaKeys, metaVClocks, vmeta, _i, _len;
       vmeta = vmap['_vmeta'];
       if (!vmeta) {
         vmeta = (vmap['_vmeta'] = {});
       }
-      for (key in vmap) {
-        if (key !== '_vmeta') {
-          mapKeys = key;
+      mapKeys = (function() {
+        var _results;
+        _results = [];
+        for (key in vmap) {
+          if (key !== '_vmeta') {
+            _results.push(key);
+          }
         }
-      }
-      for (key in vmeta) {
-        metaKeys = key;
-      }
+        return _results;
+      })();
+      metaKeys = (function() {
+        var _results;
+        _results = [];
+        for (key in vmeta) {
+          _results.push(key);
+        }
+        return _results;
+      })();
       metaVClocks = (function() {
         var _i, _len, _results;
         _results = [];
@@ -146,15 +173,18 @@ VectorMap = (function() {
       })();
       maxVC = vclock_lub.apply(null, metaVClocks);
       editVC = vclock_increment(maxVC, peerID);
-      allKeys = mapKeys.union(metaKeys);
+      allKeys = mapKeys;
       changed = false;
-      for (key in allKeys) {
+      for (_i = 0, _len = allKeys.length; _i < _len; _i++) {
+        key = allKeys[_i];
         changed |= updateKey(vmap, key, editVC);
       }
+      print(JSON.stringify(mapKeys));
+      print(JSON.stringify(vmap));
       if (changed) {
         updateVMapHash(vmap, mapKeys);
       }
       return vmap;
     }
   };
-})();
+}).call(this);
