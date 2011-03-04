@@ -11,21 +11,28 @@ import java.util.HashMap;
 
 trait Generators {
   def genPeer = {
-    val i=Gen.choose(0,100)
-    Gen.oneOf("jens", "peter", "hans", "thomas"+i)
+    Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
+				  (  1, Gen.value("peter")),
+				  (  1, Gen.value("hans")),
+				  (  1, Gen.alphaStr),
+				  (5*s, Gen.choose(1,100*s) map {"thomas"+_})))
   }
 
   def genCount = Gen.oneOf(Gen.choose(0,5), Gen.choose(0,100));
 
   val now : Int = (System.currentTimeMillis()/1000).asInstanceOf[Int]
-  def genTimestamp = for (r<-Gen.choose(-50,50)) yield now+r
+  def genTimestamp = for (r<-Gen.choose(-20,20)) yield now+r
 
   type VClockEntry = (String, Int, Int)
   val genVClockEntry : Gen[VClockEntry] =
     for (p<-genPeer; c<-genCount; t<-genTimestamp) yield (p,c,t)
 
   def genVClock : Gen[VClock] = {
-    val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry)
+    val namesAreDistinct = (entries:Array[VClockEntry]) => {
+      val names = entries map {_._1}
+      names.size == (Set() ++ names).size
+    }
+    val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry) suchThat namesAreDistinct
     entriesGen map {e=>new VClock(e map {_._1}, e map {_._2}, e map {_._3})}
   }
 
