@@ -13,8 +13,17 @@
     <properties>
         <os.installed.protoc.version>2.3.0</os.installed.protoc.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <skip.tests>true</skip.tests>
+	<scala.version>2.8.1</scala.version> 
+        <skip.tests>false</skip.tests>
     </properties>
+
+    <repositories>
+      <repository>
+	<id>scala-tools.org</id>
+	<name>Scala-tools Maven2 Repository</name>
+	<url>http://scala-tools.org/repo-releases</url>
+      </repository>
+    </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -50,12 +59,27 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>5.6</version>
-            <classifier>jdk15</classifier>
-            <scope>test</scope>
-        </dependency>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+          <version>${scala.version}</version>
+          <type>jar</type>
+          <scope>compile</scope>
+        </dependency> 
+
+	<dependency>
+	  <groupId>org.scala-tools.testing</groupId>
+	  <artifactId>specs_${scala.version}</artifactId>
+	  <version>1.6.7</version>
+          <scope>test</scope>
+	</dependency>
+
+	<dependency>
+	  <groupId>org.scala-tools.testing</groupId>
+	  <artifactId>scalacheck_2.8.1</artifactId>
+	  <version>1.8</version>
+          <scope>test</scope>
+	</dependency>
+
     </dependencies>
 
     <build>
@@ -77,9 +101,6 @@
                     <skip>${skip.tests}</skip>
                     <argLine>-Xms128m -Xmx256m -XX:PermSize=128m -XX:MaxPermSize=256m</argLine>
                     <parallel>false</parallel>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
                 </configuration>
             </plugin>
 
@@ -99,6 +120,27 @@
                 </executions>
             </plugin>
 
+	    <plugin>
+	      <groupId>org.scala-tools</groupId>
+	      <artifactId>maven-scala-plugin</artifactId>
+	      <executions>
+		<execution>
+		  <id>scala-compile-first</id>
+		  <phase>process-resources</phase>
+		  <goals>
+		    <goal>add-source</goal>
+		    <goal>compile</goal>
+		  </goals>
+		</execution>									
+		<execution>
+		  <id>scala-test-compile</id>
+		  <phase>process-test-resources</phase>
+		  <goals>
+		    <goal>testCompile</goal>
+		  </goals>
+		</execution>
+	      </executions>
+	    </plugin>
         </plugins>
 
     </build>
