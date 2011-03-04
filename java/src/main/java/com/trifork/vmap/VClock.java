@@ -45,6 +45,13 @@ public class VClock {
 		public Time increment() {
 			return new Time(count + 1, (int) (System.currentTimeMillis()/1000));
 		}
+
+		public boolean equals(Object o) {
+			if (! (o instanceof Time)) return false;
+			Time other = (Time) o;
+			return (count==other.count &&
+					time ==other.time);
+		}
 	}
 
 	public Map<String, Time> updateMax(Map<String, Time> max) {
