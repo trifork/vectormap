@@ -13,6 +13,9 @@ public class VClock {
 	final long[] utc_millis;
 
 	public VClock(String[] peers, int[] counters, long[] times) {
+		if (peers.length != counters.length ||
+			peers.length != times.length)
+			throw new IllegalArgumentException("VClock: array lengths do not match: "+peers.length+"/"+counters.length+"/"+times.length);
 		this.peers = peers;
 		this.counters = counters;
 		this.utc_millis = times;
@@ -31,8 +34,8 @@ public class VClock {
 	}
 
 	public static class Time {
-		int count;
-		long time;
+		final int count;
+		final long time;
 
 		public Time(int count, long time) {
 			this.count = count;
