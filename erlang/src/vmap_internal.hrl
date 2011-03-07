@@ -6,7 +6,7 @@
 -record(vmap, { 
 	  dict = [] :: vdict(),
 	  update_peer :: peer(),
-	  hash :: hash()
+	  hash :: hash() | undefined
 	 }).
 
 -record(vobj, {
@@ -24,8 +24,8 @@
 -type vdict()  :: [{ key(), vobj() }].
 -type vmap()   :: #vmap{}.
 -type vobj()   :: #vobj{}.
--type datum()  :: #vmap{} | #vmime{} | tombstone. 
--type hash()   :: <<_:20>>.
+-type datum()  :: #vmap{} | #vmime{} | binary() | tombstone. 
+-type hash()   :: <<_ : 160>>.
 -type clock()  :: { peer(), integer(), integer() }.
 -type vclock() :: [ clock() ].
 -type peer()   :: binary().

@@ -71,13 +71,14 @@ conflicts(#vmap{dict=VDict}) ->
 delete(Key, VMap) ->
     do_store(Key, tombstone, VMap).
 
+-spec add(Datum::datum() | {mime, binary(), binary()}, VMap::vmap()) -> vmap().
 add(#vmap{}=Datum, VMap) ->
     VM = vmap_ensure_hash(Datum),
     store(VM#vmap.hash, VM, VMap);
 add(Datum,VMap) ->
     store(datum_hash(Datum), Datum, VMap).
 
--spec store( binary(),   
+-spec store( key(),
 	       integer() | float()
 	     | string() | binary()
 	     | vmap() 
@@ -193,6 +194,7 @@ vdata_merge_elm(Elm,[H|Rest],Result) ->
 
 
 
+-spec vmap_ensure_hash/1 :: (vmap()) -> vmap().
 vmap_ensure_hash(#vmap{hash=undefined}=VMap) ->
     Context = vmap_digest(VMap, crypto:sha_init()),
     Hash=crypto:sha_final(Context),
@@ -336,10 +338,6 @@ vclock_lub([{Peer,_,_}=Clock|Rest], [{Peer2,_,_}|_]=VClock2) when Peer < Peer2 -
 vclock_lub([{Peer,_,_}|_]=VClock, [{Peer2,_,_}=Clock2|Rest2]) when Peer2 < Peer ->
     [Clock2 | vclock_lub(VClock,Rest2)].
 
-
-       
-    
-    
 
 %%% vdict ADT
 
