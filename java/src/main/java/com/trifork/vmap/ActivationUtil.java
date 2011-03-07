@@ -15,7 +15,7 @@ import javax.activation.DataContentHandler;
 import com.trifork.activation.IO;
 
 public abstract class ActivationUtil {
-	@SuppressWarnings("unchecked")
+
 	public static <T> T decode(DataSource ds, Class<T> representationClass)
 			throws IOException, UnsupportedFlavorException {
 
@@ -31,10 +31,15 @@ public abstract class ActivationUtil {
 			return (T) bao.toByteArray();
 		}
 
-		CommandMap defaultCommandMap = CommandMap.getDefaultCommandMap();
-		CommandInfo cc = defaultCommandMap.getCommand(ds.getContentType(),
-				"content-handler", ds);
+		String contentType = ds.getContentType();
+		// CommandMap appears to expect a parameter-less mimetype:
+		int semi_pos = contentType.indexOf(';');
+		if (semi_pos >= 0) contentType = contentType.substring(0,semi_pos);
 
+
+		CommandMap defaultCommandMap = CommandMap.getDefaultCommandMap();
+		CommandInfo cc = defaultCommandMap.getCommand(contentType, "content-handler", ds);
+		
 		DataContentHandler co;
 		try {
 			co = (DataContentHandler) cc.getCommandObject(null, null);
