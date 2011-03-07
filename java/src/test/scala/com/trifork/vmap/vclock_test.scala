@@ -36,14 +36,17 @@ trait VClockGenerators {
     entriesGen map {e=>new VClock(e map {_._1}, e map {_._2}, e map {_._3})}
   }
 
+  case class PeerName(name:String);
+
   implicit def arbVClock : Arbitrary[VClock] =  Arbitrary(genVClock)
+  implicit def arbPeerName : Arbitrary[PeerName] = Arbitrary(genPeer map {x=>PeerName(x)})
 }
 
 // All JUnit4 tests must end with "Test"
 // It must be a class, not an object, otherwise the class name would be mySpecTest$
 class VClockTest extends AbstractTest(VClockSpec);
 
-object VClockSpec extends Specification with VClockGenerators with ScalaCheck {
+object VClockSpec extends MySpecification with VClockGenerators {
   def maxOf2(a:VClock, b:VClock) =
     b.updateMax(a.updateMax(new HashMap()));
 
@@ -57,7 +60,7 @@ object VClockSpec extends Specification with VClockGenerators with ScalaCheck {
  
 
   "VClock.updateMax()" should {
-    "be commutative" >> {(forAll(updateMaxIsCommutative) must pass)}
-    "be associative" >> {(forAll(updateMaxIsAssociative) must pass)}
+    "be commutative" >> {check(forAll(updateMaxIsCommutative))}
+    "be associative" >> {check(forAll(updateMaxIsAssociative))}
   }
 }
