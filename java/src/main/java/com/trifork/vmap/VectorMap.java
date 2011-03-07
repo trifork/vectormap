@@ -44,12 +44,11 @@ public class VectorMap {
 	Map<String, VEntry> content;
 	private VClock update_vclock;
 
-	VectorMap(Map<String, VEntry> content) {
+	protected VectorMap(Map<String, VEntry> content) {
 		this.content = content;
 	}
 
-	VectorMap(String thisPeer, Map<String, VEntry> content) {
-
+	protected VectorMap(String thisPeer, Map<String, VEntry> content) {
 		this.content = content;
 		setThisPeer(thisPeer);
 	}
@@ -116,11 +115,15 @@ public class VectorMap {
 
 	public void put(String key, DataSource ds) throws IOException {
 		update_vclock.timeStamp(thisPeer);
-		if (ds == null) { // TODO: Why test here?
+		if (ds == null) { // TODO: Why this test?
 			content.put(key, new VEntry(update_vclock, new DataSource[] { null }));
 		} else {
 			content.put(key, new VEntry(update_vclock, new DataSource[] { ds }));
 		}
+	}
+
+	public boolean containsKey(String key) {
+		return content.get(key) != null; // Not present at all, or tombstone.
 	}
 
 }
