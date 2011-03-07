@@ -1,23 +1,15 @@
 package com.trifork.vmap;
 
-import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.activation.CommandInfo;
-import javax.activation.CommandMap;
-import javax.activation.DataContentHandler;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
 
-import com.trifork.activation.IO;
 import com.trifork.vmap.VClock.Time;
 
 public class VectorMap {
@@ -39,7 +31,7 @@ public class VectorMap {
 
 	static {
 		try {
-			MIME_TYPE_PROTOBUF = new MimeType("application/x-protobuf");
+			MIME_TYPE_PROTOBUF = new MimeType("application", "x-protobuf");
 			MIME_TYPE_PROTOBUF.setParameter("proto", "vectormap.proto");
 			MIME_TYPE_PROTOBUF.setParameter("message", "PBVectorMap");
 			MIME_TYPE_PROTOBUF_STRING = MIME_TYPE_PROTOBUF.toString();
@@ -98,44 +90,7 @@ public class VectorMap {
 		if (encodedValue == null)
 			return null;
 
-		return decode(encodedValue, representationClass);
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> T decode(DataSource ds, Class<T> representationClass)
-			throws IOException, UnsupportedFlavorException {
-
-		if (representationClass == DataSource.class)
-			return (T) ds;
-
-		if (representationClass == InputStream.class)
-			return (T) ds.getInputStream();
-
-		if (representationClass == byte[].class) {
-			ByteArrayOutputStream bao = new ByteArrayOutputStream();
-			IO.copystream(ds.getInputStream(), bao);
-			return (T) bao.toByteArray();
-		}
-
-		CommandMap defaultCommandMap = CommandMap.getDefaultCommandMap();
-		CommandInfo cc = defaultCommandMap.getCommand(ds.getContentType(),
-				"content-handler", ds);
-
-		DataContentHandler co;
-		try {
-			co = (DataContentHandler) cc.getCommandObject(null, null);
-		} catch (ClassNotFoundException e) {
-			throw new IOException(e);
-		}
-
-		DataFlavor[] flavors = co.getTransferDataFlavors();
-		for (int i = 0; i < flavors.length; i++) {
-			if (flavors[i].getRepresentationClass() == representationClass) {
-				return (T) co.getTransferData(flavors[i], ds);
-			}
-		}
-		
-		throw new UnsupportedEncodingException();
+		return ActivationUtil.decode(encodedValue, representationClass);
 	}
 
 	public void remove(String key) {
@@ -161,9 +116,8 @@ public class VectorMap {
 
 	public void put(String key, DataSource ds) throws IOException {
 		update_vclock.timeStamp(thisPeer);
-		if (ds == null) {
-			content.put(key, new VEntry(update_vclock,
-					new DataSource[] { null }));
+		if (ds == null) { // TODO: Why test here?
+			content.put(key, new VEntry(update_vclock, new DataSource[] { null }));
 		} else {
 			content.put(key, new VEntry(update_vclock, new DataSource[] { ds }));
 		}
