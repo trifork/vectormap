@@ -5,6 +5,9 @@ package com.trifork.vmap;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Collection;
 
 public class VClock {
 
@@ -21,7 +24,7 @@ public class VClock {
 		this.utc_secs = times;
 	}
 
-	public VClock(Entry<String, Time>[] ents) {
+	protected VClock(Entry<String, Time>[] ents) {
 		this.peers = new String[ents.length];
 		this.counters = new int[ents.length];
 		this.utc_secs = new int[ents.length];
@@ -34,9 +37,8 @@ public class VClock {
 	}
 
 	public VClock(Map<String, Time> map) {
-		this((Entry<String, Time>[]) (map.entrySet().toArray(new Entry[map.size()])));
+		this(entriesByTime(map.entrySet()));
 	}
-
 
 	public static class Time {
 		final int count;
@@ -48,7 +50,7 @@ public class VClock {
 		}
 
 		public Time increment() {
-			return new Time(count + 1, (int) (System.currentTimeMillis()/1000));
+			return new Time(count + 1, currentTimeSeconds());
 		}
 
 		public boolean equals(Object o) {
@@ -60,6 +62,20 @@ public class VClock {
 
 		public String toString() {
 			return "Time("+count+","+time+")";
+		}
+
+		/** Derive an incremented time - or, given null, create a new
+		 *  Time with a count of one.
+		 *  In both cases, the timestamp of the returned Time is the
+		 *  present time. */
+		public static Time increment(Time org) {
+			return (org!=null)
+				? org.increment()
+				: new Time(1, currentTimeSeconds());
+		}
+
+		public static int currentTimeSeconds() {
+			return (int) (System.currentTimeMillis()/1000);
 		}
 	}
 
@@ -106,4 +122,27 @@ public class VClock {
 		return sb.append("]").toString();
 	}
 
+
+	/** Convert an Entry set to a array, sorted by time. */
+	protected static Entry<String, Time>[] entriesByTime(Collection<Entry<String, Time>> org) {
+		Entry<String, Time>[] entries = (org.toArray(new Entry[org.size()]));
+		Arrays.sort(entries, VClock.BY_TIME);
+		return entries;
+	}
+
+	final static Comparator<Entry<String, Time>> BY_TIME =
+		new Comparator<Entry<String, Time>>() {
+			@Override
+			public int compare(Entry<String, Time> o1, Entry<String, Time> o2) {
+				int time1 = o1.getValue().time;
+				int time2 = o2.getValue().time;
+				if (time1 > time2) {
+					return -1;
+				} else if (time1 < time2) {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
+	};
 }

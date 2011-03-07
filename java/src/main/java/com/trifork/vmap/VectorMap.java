@@ -6,11 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.activation.CommandInfo;
 import javax.activation.CommandMap;
@@ -86,29 +83,9 @@ public class VectorMap {
 		}
 
 		Time thisTime = max.get(thisPeer);
-		if (thisTime == null) {
-			max.put(thisPeer,
-					thisTime = new Time(1, (int) (System.currentTimeMillis()/1000)));
-		} else {
-			max.put(thisPeer, thisTime = thisTime.increment());
-		}
-
-		Entry<String, Time>[] ents = max.entrySet().toArray(
-				new Map.Entry[max.size()]);
-		Arrays.sort(ents, new Comparator<Entry<String, Time>>() {
-			@Override
-			public int compare(Entry<String, Time> o1, Entry<String, Time> o2) {
-				if (o1.getValue().time > o2.getValue().time) {
-					return -1;
-				} else if (o1.getValue().time < o2.getValue().time) {
-					return 1;
-				} else {
-					return 0;
-				}
-			}
-		});
-
-		return new VClock(ents);
+		
+		max.put(thisPeer, thisTime = Time.increment(thisTime));
+		return new VClock(max);
 	}
 
 	public <T> T get(String key, Class<T> representationClass)
