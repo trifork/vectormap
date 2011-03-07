@@ -9,7 +9,7 @@ import org.specs.runner.JUnit4
 
 import java.util.HashMap;
 
-trait Generators {
+trait VClockGenerators {
   def genPeer = {
     Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
 				  (  1, Gen.value("peter")),
@@ -41,26 +41,9 @@ trait Generators {
 
 // All JUnit4 tests must end with "Test"
 // It must be a class, not an object, otherwise the class name would be mySpecTest$
-class VClockTest extends JUnit4(VClockSpec) {
+class VClockTest extends AbstractTest(VClockSpec);
 
-  // Why isn't errors reported correctly by JUnit/Maven??
-  override def run(r:TestResult) = {
-    Console.println("DB| running with "+r+"...");
-    val res = super.run(r)
-    Console.println("DB| ran with "+r+": "+r.failureCount()+"/"+r.errorCount()+"/"+r.runCount());
-    for (tf <- new RichEnumeration(r.failures)) Console.println("*** Test Failure: *** "+tf);
-    for (te <- new RichEnumeration(r.errors))   Console.println("*** Test Error: *** "+te);
-    res
-  }
-
-  class RichEnumeration[T](enumeration:java.util.Enumeration[T]) extends Iterator[T] {
-    def hasNext:Boolean =  enumeration.hasMoreElements()
-    def next:T = enumeration.nextElement()
-  }
-}
-
-
-object VClockSpec extends Specification with Generators with ScalaCheck {
+object VClockSpec extends Specification with VClockGenerators with ScalaCheck {
   def maxOf2(a:VClock, b:VClock) =
     b.updateMax(a.updateMax(new HashMap()));
 
