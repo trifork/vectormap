@@ -9,60 +9,88 @@ import org.specs.runner.JUnit4
 
 import java.util.HashMap;
 
-trait Generators {
+trait VClockGenerators {
   def genPeer = {
-    val i=Gen.choose(0,100)
-    Gen.oneOf("jens", "peter", "hans", "thomas"+i)
+    Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
+				  (  1, Gen.value("peter")),
+				  (  1, Gen.value("hans")),
+				  (  1, Gen.alphaStr),
+				  (5*s, Gen.choose(1,100*s) map {"thomas"+_})))
   }
 
   def genCount = Gen.oneOf(Gen.choose(0,5), Gen.choose(0,100));
 
   val now : Int = (System.currentTimeMillis()/1000).asInstanceOf[Int]
-  def genTimestamp = for (r<-Gen.choose(-50,50)) yield now+r
+  def genTimestamp = for (r<-Gen.choose(-20,20)) yield now+r
 
   type VClockEntry = (String, Int, Int)
   val genVClockEntry : Gen[VClockEntry] =
     for (p<-genPeer; c<-genCount; t<-genTimestamp) yield (p,c,t)
 
   def genVClock : Gen[VClock] = {
-    val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry)
+    val namesAreDistinct = (entries:Array[VClockEntry]) => {
+      val names = entries map {_._1}
+      names.size == (Set() ++ names).size
+    }
+    val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry) suchThat namesAreDistinct
     entriesGen map {e=>new VClock(e map {_._1}, e map {_._2}, e map {_._3})}
   }
 
+  case class PeerName(name:String);
+
   implicit def arbVClock : Arbitrary[VClock] =  Arbitrary(genVClock)
+  implicit def arbPeerName : Arbitrary[PeerName] = Arbitrary(genPeer map {x=>PeerName(x)})
 }
 
 // All JUnit4 tests must end with "Test"
 // It must be a class, not an object, otherwise the class name would be mySpecTest$
-class VClockTest extends JUnit4(VClockSpec) {
+class VClockTest extends AbstractTest(VClockSpec);
 
-  // Why isn't errors reported correctly by JUnit/Maven??
-  override def run(r:TestResult) = {
-    Console.println("DB| running with "+r+"...");
-    val res = super.run(r)
-    Console.println("DB| ran with "+r+": "+r.failureCount()+"/"+r.errorCount()+"/"+r.runCount());
-    for (tf <- new RichEnumeration(r.failures)) Console.println("*** Test Failure: *** "+tf);
-    for (te <- new RichEnumeration(r.errors))   Console.println("*** Test Error: *** "+te);
-    res
-  }
+object VClockSpec extends MySpecification with VClockGenerators {
+  def maxOf2(a:VClock, b:VClock) =
+    b.updateMax(a.updateMax(new HashMap()));
 
-  class RichEnumeration[T](enumeration:java.util.Enumeration[T]) extends Iterator[T] {
-    def hasNext:Boolean =  enumeration.hasMoreElements()
-    def next:T = enumeration.nextElement()
-  }
-}
-
-
-object VClockSpec extends Specification with Generators with ScalaCheck {
   val updateMaxIsCommutative = 
-    (vc1:VClock, vc2:VClock) =>
-      (vc2.updateMax(vc1.updateMax(new HashMap())) ==
-	vc1.updateMax(vc2.updateMax(new HashMap())));
+    (vc1:VClock, vc2:VClock) => maxOf2(vc1, vc2) == maxOf2(vc2, vc1);
+
+  val updateMaxIsAssociative = 
+    (vc1:VClock, vc2:VClock, vc3:VClock) => 
+      (maxOf2(vc1, new VClock(maxOf2(vc2, vc3))) ==
+	maxOf2(new VClock(maxOf2(vc1, vc2)), vc3));
 
   "VClock.updateMax()" should {
-    "be commutative" in {
-      (forAll(updateMaxIsCommutative) must pass)
-     
+    "be commutative" >> {check(forAll(updateMaxIsCommutative))}
+    "be associative" >> {check(forAll(updateMaxIsAssociative))}
+  }
+
+  def mirrorCompareResult(x:Int) = x match {
+    case VClock.SAME       => VClock.SAME
+    case VClock.BEFORE     => VClock.AFTER
+    case VClock.AFTER      => VClock.BEFORE
+    case VClock.CONCURRENT => VClock.CONCURRENT
+  }
+
+  val compareIsCorrectForReflexion =
+    (vc:VClock) => VClock.compare(vc,vc) == VClock.SAME;
+
+  val compareIsCorrectForCommutation =
+    (vc1:VClock, vc2:VClock) => {
+      val cmp1 = VClock.compare(vc1,vc2);
+      val cmp2 = VClock.compare(vc2,vc1);
+      cmp1 == mirrorCompareResult(cmp2)
     }
+
+  /*
+  val compareDetectsConcurrentUpdates =
+    (vc:VClock, p1:PeerName, p2:PeerName) => {
+    }
+    */
+
+
+  "VClock.compare()" should {
+    "treat reflection correctly" >> {check(forAll(compareIsCorrectForReflexion))}
+    "treat commutation correctly" >> {check(forAll(compareIsCorrectForCommutation))}
+    // Handle linear history correctly
+    // Detect concurrent edits
   }
 }
