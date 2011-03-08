@@ -79,9 +79,10 @@ public class VClock {
 		}
 	}
 
-	public Map<String, Time> updateMax(Map<String, Time> max) {
+	/** Update lowest upper bound. */
+	public Map<String, Time> updateLUB(Map<String, Time> lub) {
 		for (int i = 0; i < peers.length; i++) {
-			Time t = max.get(peers[i]);
+			Time t = lub.get(peers[i]);
 
 			int new_count = t==null ? 0 : t.count;
 			int new_time  = t==null ? 0 : t.time;
@@ -92,9 +93,9 @@ public class VClock {
 			if (new_time < utc_secs[i]) {
 				new_time = utc_secs[i]; update = true;
 			}
-			if (update) max.put(peers[i], new Time(new_count, new_time));
+			if (update) lub.put(peers[i], new Time(new_count, new_time));
 		}
-		return max;
+		return lub;
 	}
 
 	public void timeStamp(String peer) {

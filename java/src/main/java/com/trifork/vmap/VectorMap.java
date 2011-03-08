@@ -68,15 +68,15 @@ public class VectorMap {
 
 	@SuppressWarnings("unchecked")
 	private VClock computeUpdateVClock() {
-		Map<String, VClock.Time> max = new HashMap<String, VClock.Time>();
+		Map<String, VClock.Time> lub = new HashMap<String, VClock.Time>();
 		for (VEntry ent : content.values()) {
-			ent.vClock.updateMax(max);
+			ent.vClock.updateLUB(lub);
 		}
 
-		Time thisTime = max.get(thisPeer);
+		Time thisTime = lub.get(thisPeer);
 		
-		max.put(thisPeer, thisTime = Time.increment(thisTime));
-		return new VClock(max);
+		lub.put(thisPeer, thisTime = Time.increment(thisTime));
+		return new VClock(lub);
 	}
 
 	public <T> T get(String key, Class<T> representationClass)

@@ -61,20 +61,20 @@ trait VClockGenerators {
 class VClockTest extends AbstractTest(VClockSpec);
 
 object VClockSpec extends MySpecification with VClockGenerators {
-  def maxOf2(a:VClock, b:VClock) =
-    b.updateMax(a.updateMax(new HashMap()));
+  def lubOf2(a:VClock, b:VClock) =
+    b.updateLUB(a.updateLUB(new HashMap()));
 
-  val updateMaxIsCommutative = 
-    (vc1:VClock, vc2:VClock) => maxOf2(vc1, vc2) == maxOf2(vc2, vc1);
+  val updateLUBIsCommutative = 
+    (vc1:VClock, vc2:VClock) => lubOf2(vc1, vc2) == lubOf2(vc2, vc1);
 
-  val updateMaxIsAssociative = 
+  val updateLUBIsAssociative = 
     (vc1:VClock, vc2:VClock, vc3:VClock) => 
-      (maxOf2(vc1, new VClock(maxOf2(vc2, vc3))) ==
-	maxOf2(new VClock(maxOf2(vc1, vc2)), vc3));
+      (lubOf2(vc1, new VClock(lubOf2(vc2, vc3))) ==
+	lubOf2(new VClock(lubOf2(vc1, vc2)), vc3));
 
-  "VClock.updateMax()" should {
-    "be commutative" >> {check(forAll(updateMaxIsCommutative))}
-    "be associative" >> {check(forAll(updateMaxIsAssociative))}
+  "VClock.updateLUB()" should {
+    "be commutative" >> {check(forAll(updateLUBIsCommutative))}
+    "be associative" >> {check(forAll(updateLUBIsAssociative))}
   }
 
   def mirrorCompareResult(x:Int) = x match {
