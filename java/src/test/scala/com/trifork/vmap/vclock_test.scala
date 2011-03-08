@@ -10,6 +10,7 @@ import org.specs.runner.JUnit4
 import java.util.HashMap;
 
 trait VClockGenerators {
+
   def genPeer = {
     Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
 				  (  1, Gen.value("peter")),
@@ -36,10 +37,23 @@ trait VClockGenerators {
     entriesGen map {e=>new VClock(e map {_._1}, e map {_._2}, e map {_._3})}
   }
 
-  case class PeerName(name:String);
+  def genSaneString : Gen[String] =
+    Gen.containerOf[List,Char](Gen.choose(Character.MIN_VALUE,Character.MAX_VALUE)) map {_.filter{c=>Character.isDefined(c) && !Character.isLowSurrogate(c) && !Character.isHighSurrogate(c)}.mkString}
 
+
+  // Type aliases for easy data generation purposes:
+  /*
+   case class SaneString(string:String);
+   implicit def unwrapSaneString(x:SaneString) : String = x.string;
+   implicit val arbSaneString: Arbitrary[SaneString] = Arbitrary(genSaneString map {x=>SaneString(x)})
+   */
+
+  case class PeerName(name:String);
+  def genPeerName : Gen[PeerName] = genPeer map {x=>PeerName(x)}
+  implicit def arbPeerName : Arbitrary[PeerName] = Arbitrary(genPeerName)
+
+  // Other 'Arbitrary' implicits:
   implicit def arbVClock : Arbitrary[VClock] =  Arbitrary(genVClock)
-  implicit def arbPeerName : Arbitrary[PeerName] = Arbitrary(genPeer map {x=>PeerName(x)})
 }
 
 // All JUnit4 tests must end with "Test"

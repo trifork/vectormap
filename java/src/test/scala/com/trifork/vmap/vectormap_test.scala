@@ -31,12 +31,21 @@ object VectorMapSpec extends MySpecification with VClockGenerators {
     }
   }
 
+  type Update = (PeerName, String, Option[String]);
+  val updateGen : Gen[Update] =
+    for (p<-genPeerName;
+	 k<-genSaneString;
+	 v<-Gen.oneOf(None, genSaneString map {x=>Some(x)}))
+    yield (p,k,v);
+  val updatesGen : Gen[List[Update]] =
+    Gen.containerOf[List,Update](updateGen)
+
   val containsIsLikeSet =
     (updates : List[(PeerName, String, Option[String])]) =>
       {
 	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map())
 	val (vmap, map) = updates.foldLeft(initial)(performUpdate(_,_));
-	val keys :List[String] = updates.map {_._2}
+	val keys = updates.map {_._2}
 	(keys map {vmap.containsKey(_)}) == (keys map {map.contains(_)})
       }
 
@@ -45,22 +54,20 @@ object VectorMapSpec extends MySpecification with VClockGenerators {
       {
 	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map())
 	val (vmap, map) = updates.foldLeft(initial)(performUpdate(_,_));
-	val keys :List[String] = updates.map {_._2}
-// 	val getFun = (key:String) => vmap.get(key) match {
-// 	  case null => None
-// 	  case x    => Some(x)
-// 	}
+	val keys = updates.map {_._2}
 	def nullToNone[T](x:T) = Option.apply(x)
 	val strClass = classOf[String]
-	(keys map {k=>nullToNone(vmap.get(k,strClass))}) == (keys map {map.get(_)})
+	val r1 = (keys map {k=>nullToNone(vmap.get(k,strClass))});
+	val r2 = (keys map {map.get(_)});
+	r1==r2
       }
 
 
   "VectorMap.containsKey()" should {
-    "behave as set membership, for linear history" >> check(forAll(containsIsLikeSet))
+    "behave as set membership, for linear history" >> check(forAll(updatesGen)(containsIsLikeSet))
   };
 
   "VectorMap.get()" should {
-    "behave as map access, for linear history" >> check(forAll(getIsLikeMap))
+    "behave as map access, for linear history" >> check(forAll(updatesGen)(getIsLikeMap))
   }
 }
