@@ -74,23 +74,20 @@ class VClockTest extends AbstractTest(VClockSpec);
 object VClockSpec extends MySpecification with VClockGenerators {
   type TimeMap = HashMap[String,Time];
 
-  def lubOf2(a:VClock, b:VClock) =
-    b.updateLUB(a.updateLUB(new TimeMap()));
-
   def updateAs(vc:VClock, peer:PeerName) : VClock = {
-    val lub = new TimeMap();
-    vc.updateLUB(lub);
-    lub.put(peer.name, Time.increment(lub.get(peer.name)));
-    new VClock(lub)
+    val map = new TimeMap();
+    vc.updateLUB(map);
+    VClock.incrementForPeer(map, peer.name);
+    new VClock(map)
   }
 
   val updateLUBIsCommutative = 
-    (vc1:VClock, vc2:VClock) => lubOf2(vc1, vc2) == lubOf2(vc2, vc1);
+    (vc1:VClock, vc2:VClock) => VClock.lub(vc1, vc2) == VClock.lub(vc2, vc1);
 
   val updateLUBIsAssociative = 
     (vc1:VClock, vc2:VClock, vc3:VClock) => 
-      (lubOf2(vc1, new VClock(lubOf2(vc2, vc3))) ==
-	lubOf2(new VClock(lubOf2(vc1, vc2)), vc3));
+      (VClock.lub(vc1, VClock.lub(vc2, vc3)) ==
+	VClock.lub(VClock.lub(vc1, vc2), vc3));
 
   "VClock.updateLUB()" should {
     "be commutative" >> {check(forAll(updateLUBIsCommutative))}

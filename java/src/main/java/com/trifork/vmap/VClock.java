@@ -5,6 +5,7 @@ package com.trifork.vmap;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collection;
@@ -72,25 +73,6 @@ public class VClock {
 		}
 	}
 
-	/** Update lowest upper bound. */
-	public Map<String, Time> updateLUB(Map<String, Time> lub) {
-		for (int i = 0; i < peers.length; i++) {
-			Time t = lub.get(peers[i]);
-
-			int new_count = t==null ? 0 : t.count;
-			int new_time  = t==null ? 0 : t.time;
-			boolean update = false;
-			if (new_count < counters[i]) {
-				new_count = counters[i]; update = true;
-			}
-			if (new_time < utc_secs[i]) {
-				new_time = utc_secs[i]; update = true;
-			}
-			if (update) lub.put(peers[i], new Time(new_count, new_time));
-		}
-		return lub;
-	}
-
 	public void timeStamp(String peer) {
 		for (int i = 0; i < peers.length; i++) {
 			if (peers[i].equals(peer)) {
@@ -115,6 +97,48 @@ public class VClock {
 		}
 		return sb.append("]").toString();
 	}
+
+	public boolean equals(Object other) {
+		return (other instanceof VClock) && equals((VClock) other);
+	}
+
+	public boolean equals(VClock other) {
+		return Arrays.equals(peers,    other.peers)
+			&& Arrays.equals(counters, other.counters)
+			&& Arrays.equals(utc_secs, other.utc_secs);
+	}
+
+	//==================== LUB computation ====================
+
+	/** Update lowest upper bound. */
+	public Map<String, Time> updateLUB(Map<String, Time> lub) {
+		for (int i = 0; i < peers.length; i++) {
+			Time t = lub.get(peers[i]);
+
+			int new_count = t==null ? 0 : t.count;
+			int new_time  = t==null ? 0 : t.time;
+			boolean update = false;
+			if (new_count < counters[i]) {
+				new_count = counters[i]; update = true;
+			}
+			if (new_time < utc_secs[i]) {
+				new_time = utc_secs[i]; update = true;
+			}
+			if (update) lub.put(peers[i], new Time(new_count, new_time));
+		}
+		return lub;
+	}
+
+	public static Map<String,Time> incrementForPeer(Map<String,Time> map, String peer) {
+		map.put(peer, Time.increment(map.get(peer)));
+		return map;
+	}
+
+	/** Binary LUB operator. */
+	public static VClock lub(VClock a, VClock b) {
+		return new VClock(b.updateLUB(a.updateLUB(new HashMap<String,Time>())));
+	}
+
 
 	//==================== Comparison ====================
 	public static final int SAME       = 0;
