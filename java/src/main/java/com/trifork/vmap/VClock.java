@@ -124,8 +124,8 @@ public class VClock {
 
 	//==================== Comparison ====================
 	public static final int SAME       = 0;
-	public static final int BEFORE     = (1 << 1);
-	public static final int AFTER      = (1 << 2);
+	public static final int BEFORE     = (1 << 0);
+	public static final int AFTER      = (1 << 1);
 	public static final int CONCURRENT = BEFORE | AFTER;
 
 	public static int compare(VClock vc1, VClock vc2) {

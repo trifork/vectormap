@@ -91,7 +91,7 @@ object VClockSpec extends MySpecification with VClockGenerators {
     (vc1:VClock, vc2:VClock) => {
       val cmp1 = VClock.compare(vc1,vc2);
       val cmp2 = VClock.compare(vc2,vc1);
-      cmp1 == mirrorCompareResult(cmp2)
+      Prop.collect(cmp1)(cmp1 == mirrorCompareResult(cmp2))
     }
 
   /*
