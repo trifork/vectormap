@@ -1,5 +1,7 @@
 package com.trifork.vmap
 
+import com.trifork.vmap.VClock.Time;
+
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.specs._
@@ -10,6 +12,11 @@ import org.specs.runner.JUnit4
 import java.util.HashMap;
 
 trait VClockGenerators {
+  case class VClockMapEntry(val key:String, var value:Time) extends java.util.Map.Entry[String,Time] {
+    def getKey() = key
+    def getValue() = value
+    def setValue(v:Time) = {val old = value; value = v; old}
+  }
 
   def genPeer = {
     Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
@@ -34,7 +41,11 @@ trait VClockGenerators {
       names.size == (Set() ++ names).size
     }
     val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry) suchThat namesAreDistinct
-    entriesGen map {e=>new VClock(e map {_._1}, e map {_._2}, e map {_._3})}
+    entriesGen map {e=>
+		    val entries : Array[java.util.Map.Entry[String,Time]] =
+		      e map {case (p,c,t) => VClockMapEntry(p, new Time(c,t))}
+		    new VClock(entries)
+		  }
   }
 
   def genSaneString : Gen[String] =
@@ -61,8 +72,17 @@ trait VClockGenerators {
 class VClockTest extends AbstractTest(VClockSpec);
 
 object VClockSpec extends MySpecification with VClockGenerators {
+  type TimeMap = HashMap[String,Time];
+
   def lubOf2(a:VClock, b:VClock) =
-    b.updateLUB(a.updateLUB(new HashMap()));
+    b.updateLUB(a.updateLUB(new TimeMap()));
+
+  def updateAs(vc:VClock, peer:PeerName) : VClock = {
+    val lub = new TimeMap();
+    vc.updateLUB(lub);
+    lub.put(peer.name, Time.increment(lub.get(peer.name)));
+    new VClock(lub)
+  }
 
   val updateLUBIsCommutative = 
     (vc1:VClock, vc2:VClock) => lubOf2(vc1, vc2) == lubOf2(vc2, vc1);
@@ -94,17 +114,30 @@ object VClockSpec extends MySpecification with VClockGenerators {
       Prop.collect(cmp1)(cmp1 == mirrorCompareResult(cmp2))
     }
 
-  /*
   val compareDetectsConcurrentUpdates =
     (vc:VClock, p1:PeerName, p2:PeerName) => {
+      (p1 != p2) ==>
+	(VClock.compare(updateAs(vc, p1), updateAs(vc, p2)) == VClock.CONCURRENT)
     }
-    */
+
+  val compareHandlesLinearHistory =
+    (vc:VClock, editors:List[PeerName]) => {
+      val vc_after = editors.foldLeft(vc)(updateAs(_,_))
+      VClock.compare(vc, vc_after) ==
+	(if (editors != Nil) VClock.BEFORE else VClock.SAME)
+    }
 
 
   "VClock.compare()" should {
     "treat reflection correctly" >> {check(forAll(compareIsCorrectForReflexion))}
     "treat commutation correctly" >> {check(forAll(compareIsCorrectForCommutation))}
-    // Handle linear history correctly
-    // Detect concurrent edits
+
+    "handles linear history correctly" >> {
+      check(forAll(compareHandlesLinearHistory))
+    }
+
+    "detect concurrent edits" >> {
+      check(forAll(compareDetectsConcurrentUpdates))
+    }
   }
 }

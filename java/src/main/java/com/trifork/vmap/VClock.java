@@ -15,16 +15,9 @@ public class VClock {
 	final int[] counters;
 	final int[] utc_secs;
 
-	public VClock(String[] peers, int[] counters, int[] times) {
-		if (peers.length != counters.length ||
-			peers.length != times.length)
-			throw new IllegalArgumentException("VClock: array lengths do not match: "+peers.length+"/"+counters.length+"/"+times.length);
-		this.peers = peers;
-		this.counters = counters;
-		this.utc_secs = times;
-	}
-
-	protected VClock(Entry<String, Time>[] ents) {
+	/** OBS: Parameter is mutated (sorted). */
+	public VClock(Entry<String, Time>[] ents) {
+		Arrays.sort(ents, BY_PEER);
 		this.peers = new String[ents.length];
 		this.counters = new int[ents.length];
 		this.utc_secs = new int[ents.length];
@@ -133,9 +126,9 @@ public class VClock {
 		int result = SAME;
 		int len1 = vc1.peers.length;
 		int len2 = vc2.peers.length;
-		for (int i1 = 0, i2 = 0;
-			 i1 < len1 && i2 < len2;
-			 ) {
+
+		int i1 = 0, i2 = 0;
+		while (i1 < len1 && i2 < len2) {
 			String peer1 = vc1.peers[i1];
 			String peer2 = vc2.peers[i2];
 			int peercmp = peer1.compareTo(peer2);
@@ -157,6 +150,14 @@ public class VClock {
 			}
 			if (result==CONCURRENT) break; // Nothing more to do.
 		}
+
+		if (i1 < len1) { // peer 1 not present in vc2
+			result |= AFTER;
+		}
+		if (i2 < len2) { // peer 2 not present in vc1
+			result |= BEFORE;
+		}
+
 		return result;
 	}
 
