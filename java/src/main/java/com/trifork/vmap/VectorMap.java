@@ -4,6 +4,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -73,11 +74,11 @@ public class VectorMap {
 			ent.vClock.updateLUB(lub);
 		}
 
-		Time thisTime = lub.get(thisPeer);
-		lub.put(thisPeer, Time.increment(thisTime));
-		
+		VClock.incrementForPeer(lub, thisPeer);
 		return new VClock(lub);
 	}
+
+	//==================== Basic map methods ==============================
 
 	public <T> T get(String key, Class<T> representationClass)
 			throws UnsupportedFlavorException, IOException {
@@ -93,11 +94,7 @@ public class VectorMap {
 	}
 
 	public void remove(String key) {
-		try {
-			put(key, (DataSource)null);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		put(key, (DataSource)null);
 	}
 
 	public void put(String key, String string) throws IOException {
@@ -105,7 +102,7 @@ public class VectorMap {
 	}
 
 	public void put(String key, byte[] data) throws IOException {
-		put(key, "application/binary", data);
+		put(key, "application/octet-stream", data);
 	}
 
 	public void put(String key, String mimeType, Object value)
@@ -113,7 +110,7 @@ public class VectorMap {
 		put(key, new DataHandler(value, mimeType).getDataSource());
 	}
 
-	public void put(String key, DataSource ds) throws IOException {
+	public void put(String key, DataSource ds) {
 		update_vclock.timeStamp(thisPeer);
 		if (ds == null) { // TODO: Why this test?
 			content.put(key, new VEntry(update_vclock, new DataSource[] { null }));
@@ -131,4 +128,53 @@ public class VectorMap {
 		return false; // Only tombstone present, if any.
 	}
 
+
+	//==================== Merging ========================================
+
+	public static VectorMap merge(VectorMap v1, VectorMap v2) {
+		final HashMap<String, VEntry> union = new HashMap<String, VEntry>();
+
+		for (Map.Entry<String,VEntry> e1 : v1.content.entrySet()) {
+			String key = e1.getKey();
+			VEntry value = e1.getValue();
+
+			VEntry value2 = v2.content.get(key);
+			if (value2 != null) {
+				value = merge_entry(value, value2);
+			}
+			union.put(key, value);
+		}
+
+		for (Map.Entry<String,VEntry> e2 : v2.content.entrySet()) {
+			String key = e2.getKey();
+			if (! union.containsKey(key)) {
+				union.put(key, e2.getValue());
+			}
+		}
+	
+		return new VectorMap(union);
+	}
+
+	public static VEntry merge_entry(VEntry e1, VEntry e2) {
+		switch (VClock.compare(e1.vClock, e2.vClock)) {
+		case VClock.SAME:   return e1; // e1 and e2 should be identical... but pruning effects might cause them not to be.
+		case VClock.BEFORE: return e2;
+		case VClock.AFTER:  return e1;
+		case VClock.CONCURRENT: return merge_concurrent(e1, e2);
+		}//switch
+		throw new RuntimeException();
+	}
+
+	public static VEntry merge_concurrent(VEntry e1, VEntry e2) {
+		// Make e1 be the newest-by-max_secs entry:
+		if (e1.vClock.max_secs < e2.vClock.max_secs) {
+			VEntry tmp=e1; e1=e2; e2=tmp;
+		}
+
+		VClock merge_vclock = VClock.lub(e1.vClock, e2.vClock);
+		ArrayList<DataSource> values =
+			new ArrayList<DataSource>(e1.values.length + e2.values.length);
+		
+		return null; // TODO!
+	}
 }

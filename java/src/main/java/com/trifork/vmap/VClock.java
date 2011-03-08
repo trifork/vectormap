@@ -15,6 +15,7 @@ public class VClock {
 	final String[] peers;
 	final int[] counters;
 	final int[] utc_secs;
+	final int max_secs;
 
 	/** OBS: Parameter is mutated (sorted). */
 	public VClock(Entry<String, Time>[] ents) {
@@ -22,12 +23,15 @@ public class VClock {
 		this.peers = new String[ents.length];
 		this.counters = new int[ents.length];
 		this.utc_secs = new int[ents.length];
-
+		
+		int max_secs = 0;
 		for (int i = 0; i < ents.length; i++) {
 			peers[i] = ents[i].getKey();
 			counters[i] = ents[i].getValue().count;
 			utc_secs[i] = ents[i].getValue().time;
+			max_secs = Math.max(max_secs, utc_secs[i]);
 		}
+		this.max_secs = max_secs;
 	}
 
 	public VClock(Map<String, Time> map) {
