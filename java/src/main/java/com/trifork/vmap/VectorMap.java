@@ -74,8 +74,8 @@ public class VectorMap {
 		}
 
 		Time thisTime = lub.get(thisPeer);
+		lub.put(thisPeer, Time.increment(thisTime));
 		
-		lub.put(thisPeer, thisTime = Time.increment(thisTime));
 		return new VClock(lub);
 	}
 
