@@ -122,13 +122,60 @@ public class VClock {
 		return sb.append("]").toString();
 	}
 
+	//==================== Comparison ====================
+	public static final int SAME       = 0;
+	public static final int BEFORE     = (1 << 1);
+	public static final int AFTER      = (1 << 2);
+	public static final int CONCURRENT = BEFORE | AFTER;
+
+	public static int compare(VClock vc1, VClock vc2) {
+		int result = SAME;
+		int len1 = vc1.peers.length;
+		int len2 = vc2.peers.length;
+		for (int i1 = 0, i2 = 0;
+			 i1 < len1 && i2 < len2;
+			 ) {
+			String peer1 = vc1.peers[i1];
+			String peer2 = vc2.peers[i2];
+			int peercmp = peer1.compareTo(peer2);
+			if (peercmp == 0) {
+				int cnt1 = vc1.counters[i1];
+				int cnt2 = vc2.counters[i2];
+				if (cnt1 < cnt2) { // vc2 is newer
+					result |= BEFORE;
+				} else if (cnt1 > cnt2) { // vc1 is newer
+					result |= AFTER;
+				}
+				i1++; i2++;
+			} else if (peercmp < 0) { // peer 1 not present in vc2
+				result |= AFTER;
+				i1++;
+			} else { // peer 2 not present in vc1
+				result |= BEFORE;
+				i2++;
+			}
+			if (result==CONCURRENT) break; // Nothing more to do.
+		}
+		return result;
+	}
+
 
 	/** Convert an Entry set to a array, sorted by time. */
 	protected static Entry<String, Time>[] entriesByTime(Collection<Entry<String, Time>> org) {
 		Entry<String, Time>[] entries = (org.toArray(new Entry[org.size()]));
-		Arrays.sort(entries, VClock.BY_TIME);
+		Arrays.sort(entries, VClock.BY_PEER);
 		return entries;
 	}
+
+	final static Comparator<Entry<String, Time>> BY_PEER =
+		new Comparator<Entry<String, Time>>() {
+			@Override
+			public int compare(Entry<String, Time> o1, Entry<String, Time> o2) {
+				String peer1 = o1.getKey();
+				String peer2 = o2.getKey();
+				return peer1.compareTo(peer2);
+			}
+	};
 
 	final static Comparator<Entry<String, Time>> BY_TIME =
 		new Comparator<Entry<String, Time>>() {

@@ -57,10 +57,40 @@ object VClockSpec extends MySpecification with VClockGenerators {
     (vc1:VClock, vc2:VClock, vc3:VClock) => 
       (maxOf2(vc1, new VClock(maxOf2(vc2, vc3))) ==
 	maxOf2(new VClock(maxOf2(vc1, vc2)), vc3));
- 
 
   "VClock.updateMax()" should {
     "be commutative" >> {check(forAll(updateMaxIsCommutative))}
     "be associative" >> {check(forAll(updateMaxIsAssociative))}
+  }
+
+  def mirrorCompareResult(x:Int) = x match {
+    case VClock.SAME       => VClock.SAME
+    case VClock.BEFORE     => VClock.AFTER
+    case VClock.AFTER      => VClock.BEFORE
+    case VClock.CONCURRENT => VClock.CONCURRENT
+  }
+
+  val compareIsCorrectForReflexion =
+    (vc:VClock) => VClock.compare(vc,vc) == VClock.SAME;
+
+  val compareIsCorrectForCommutation =
+    (vc1:VClock, vc2:VClock) => {
+      val cmp1 = VClock.compare(vc1,vc2);
+      val cmp2 = VClock.compare(vc2,vc1);
+      cmp1 == mirrorCompareResult(cmp2)
+    }
+
+  /*
+  val compareDetectsConcurrentUpdates =
+    (vc:VClock, p1:PeerName, p2:PeerName) => {
+    }
+    */
+
+
+  "VClock.compare()" should {
+    "treat reflection correctly" >> {check(forAll(compareIsCorrectForReflexion))}
+    "treat commutation correctly" >> {check(forAll(compareIsCorrectForCommutation))}
+    // Handle linear history correctly
+    // Detect concurrent edits
   }
 }
