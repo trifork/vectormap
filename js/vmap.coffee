@@ -1,15 +1,12 @@
 
  max_clock = (c1,c2) ->
-       if c1[0] >= c2[0]  
-         c1  
-       else  
-         c2 
+   [Math.max(c1[0],c2[0]), Math.max(c1[1],c2[1])]
 
  missing = (o) ->
       `o == null || (typeof o) == "undefined"` 
 
  add_one_peer = (out, peer, c) ->
-       if ( !missing(out[peer]) ) 
+       if ( out[peer]? ) 
           out[peer] = max_clock(c, out[peer])
        else
           out[peer] = c
@@ -32,9 +29,9 @@
    res
 
  vclock_increment = (vc, peer) ->
-     out =  if !missing(vc) then clone(vc) else {}
+     out =  if vc? then clone(vc) else {}
      c = out[peer]
-     if !missing(c)
+     if c?
        out[peer] = [c[0]+1, utc_secs()]
      else
        out[peer] = [1, utc_secs()]
@@ -54,17 +51,19 @@
  computeHash = (any) ->
    switch typeof any
      when "string", "number", "boolean"
-       return Sha1.hash("text/plain;charset=utf8" + any, true)
+       val = "text/plain;charset=utf-8\n" + any
+       sha = Sha1.hash(val, false)
+       return sha
        
      when "object"
-       if !missing(any._vmeta)
+       if any._vmeta?
           hashVMap(any)
-       else if !missing(any._mime)
+       else if any._mime?
           bin = Base64.decode(any.base64)
-          return Sha1.hash(any._mime + bin, false)
+          return Sha1.hash(any._mime + "\n" + bin, false)
        else
           json = JSON.stringify(any)
-          return Sha1.hash("application/json;charset=utf-8" + json, true)
+          return Sha1.hash("application/json;charset=utf-8\n" + json, true)
 
      when "undefined"
        null
@@ -83,7 +82,7 @@
       if mo.deleted == true    
          # was deleted
  
-         if !missing(vmap[key])
+         if vmap[key]?
 
             # has been resurrected
             delete mo.deleted   
@@ -132,8 +131,9 @@
    string += (hexDecode(vmap._vmeta[key].hash)+"\n") for key in mapKeys.sort()
    Sha1.hash(string, false)
 
- (exports ? this).VectorMap = {
-  updateEdits: (vmap, peerID) ->
+ computeEditVC = (vmap, peerID) ->
+
+ updateEdits = (vmap, peerID) ->
    vmeta = vmap['_vmeta']
    vmeta = (vmap['_vmeta']={}) if !vmeta 
    
@@ -154,4 +154,16 @@
    if changed
       updateVMapHash(vmap, mapKeys)
    vmap
- }
+
+ class VectorMap
+  constructor: (@json) ->
+
+  put: (key,value) ->
+   @json[key] = value
+
+    
+ VectorMap.updateEdits = updateEdits
+
+ (exports ? this).VectorMap = VectorMap
+
+

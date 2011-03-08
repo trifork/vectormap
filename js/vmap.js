@@ -1,18 +1,14 @@
 (function() {
-  var add_one_peer, add_one_vc, clone, computeHash, hashVMap, hexDecode, max_clock, missing, updateKey, updateVMapHash, utc_secs, vclock_increment, vclock_lub;
+  var VectorMap, add_one_peer, add_one_vc, clone, computeEditVC, computeHash, hashVMap, hexDecode, max_clock, missing, updateEdits, updateKey, updateVMapHash, utc_secs, vclock_increment, vclock_lub;
   var __slice = Array.prototype.slice;
   max_clock = function(c1, c2) {
-    if (c1[0] >= c2[0]) {
-      return c1;
-    } else {
-      return c2;
-    }
+    return [Math.max(c1[0], c2[0]), Math.max(c1[1], c2[1])];
   };
   missing = function(o) {
     return o == null || (typeof o) == "undefined";
   };
   add_one_peer = function(out, peer, c) {
-    if (!missing(out[peer])) {
+    if ((out[peer] != null)) {
       return out[peer] = max_clock(c, out[peer]);
     } else {
       return out[peer] = c;
@@ -50,9 +46,9 @@
   };
   vclock_increment = function(vc, peer) {
     var c, out;
-    out = !missing(vc) ? clone(vc) : {};
+    out = vc != null ? clone(vc) : {};
     c = out[peer];
-    if (!missing(c)) {
+    if (c != null) {
       out[peer] = [c[0] + 1, utc_secs()];
     } else {
       out[peer] = [1, utc_secs()];
@@ -63,21 +59,23 @@
     return "";
   };
   computeHash = function(any) {
-    var bin, json;
+    var bin, json, sha, val;
     switch (typeof any) {
       case "string":
       case "number":
       case "boolean":
-        return Sha1.hash("text/plain;charset=utf8" + any, true);
+        val = "text/plain;charset=utf-8\n" + any;
+        sha = Sha1.hash(val, false);
+        return sha;
       case "object":
-        if (!missing(any._vmeta)) {
+        if (any._vmeta != null) {
           return hashVMap(any);
-        } else if (!missing(any._mime)) {
+        } else if (any._mime != null) {
           bin = Base64.decode(any.base64);
-          return Sha1.hash(any._mime + bin, false);
+          return Sha1.hash(any._mime + "\n" + bin, false);
         } else {
           json = JSON.stringify(any);
-          return Sha1.hash("application/json;charset=utf-8" + json, true);
+          return Sha1.hash("application/json;charset=utf-8\n" + json, true);
         }
         break;
       case "undefined":
@@ -91,7 +89,7 @@
     if (!missing(mo = vmap._vmeta[key])) {
       print("key " + key + " was known");
       if (mo.deleted === true) {
-        if (!missing(vmap[key])) {
+        if (vmap[key] != null) {
           delete mo.deleted;
           mo.vclock = editVC;
           mo.hash = computeHash(vmap[key]);
@@ -137,54 +135,64 @@
     }
     return Sha1.hash(string, false);
   };
-  (typeof exports != "undefined" && exports !== null ? exports : this).VectorMap = {
-    updateEdits: function(vmap, peerID) {
-      var allKeys, changed, editVC, key, mapKeys, maxVC, metaKeys, metaVClocks, vmeta, _i, _len;
-      vmeta = vmap['_vmeta'];
-      if (!vmeta) {
-        vmeta = (vmap['_vmeta'] = {});
-      }
-      mapKeys = (function() {
-        var _results;
-        _results = [];
-        for (key in vmap) {
-          if (key !== '_vmeta') {
-            _results.push(key);
-          }
-        }
-        return _results;
-      })();
-      metaKeys = (function() {
-        var _results;
-        _results = [];
-        for (key in vmeta) {
+  computeEditVC = function(vmap, peerID) {};
+  updateEdits = function(vmap, peerID) {
+    var allKeys, changed, editVC, key, mapKeys, maxVC, metaKeys, metaVClocks, vmeta, _i, _len;
+    vmeta = vmap['_vmeta'];
+    if (!vmeta) {
+      vmeta = (vmap['_vmeta'] = {});
+    }
+    mapKeys = (function() {
+      var _results;
+      _results = [];
+      for (key in vmap) {
+        if (key !== '_vmeta') {
           _results.push(key);
         }
-        return _results;
-      })();
-      metaVClocks = (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = metaKeys.length; _i < _len; _i++) {
-          key = metaKeys[_i];
-          _results.push(vmeta[key].vclock);
-        }
-        return _results;
-      })();
-      maxVC = vclock_lub.apply(null, metaVClocks);
-      editVC = vclock_increment(maxVC, peerID);
-      allKeys = mapKeys;
-      changed = false;
-      for (_i = 0, _len = allKeys.length; _i < _len; _i++) {
-        key = allKeys[_i];
-        changed |= updateKey(vmap, key, editVC);
       }
-      print(JSON.stringify(mapKeys));
-      print(JSON.stringify(vmap));
-      if (changed) {
-        updateVMapHash(vmap, mapKeys);
+      return _results;
+    })();
+    metaKeys = (function() {
+      var _results;
+      _results = [];
+      for (key in vmeta) {
+        _results.push(key);
       }
-      return vmap;
+      return _results;
+    })();
+    metaVClocks = (function() {
+      var _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = metaKeys.length; _i < _len; _i++) {
+        key = metaKeys[_i];
+        _results.push(vmeta[key].vclock);
+      }
+      return _results;
+    })();
+    maxVC = vclock_lub.apply(null, metaVClocks);
+    editVC = vclock_increment(maxVC, peerID);
+    allKeys = mapKeys;
+    changed = false;
+    for (_i = 0, _len = allKeys.length; _i < _len; _i++) {
+      key = allKeys[_i];
+      changed |= updateKey(vmap, key, editVC);
     }
+    print(JSON.stringify(mapKeys));
+    print(JSON.stringify(vmap));
+    if (changed) {
+      updateVMapHash(vmap, mapKeys);
+    }
+    return vmap;
   };
+  VectorMap = (function() {
+    function VectorMap(json) {
+      this.json = json;
+    }
+    VectorMap.prototype.put = function(key, value) {
+      return this.json[key] = value;
+    };
+    return VectorMap;
+  })();
+  VectorMap.updateEdits = updateEdits;
+  (typeof exports != "undefined" && exports !== null ? exports : this).VectorMap = VectorMap;
 }).call(this);
