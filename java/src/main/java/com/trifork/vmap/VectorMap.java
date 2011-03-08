@@ -123,7 +123,12 @@ public class VectorMap {
 	}
 
 	public boolean containsKey(String key) {
-		return content.get(key) != null; // Not present at all, or tombstone.
+		VEntry entry = content.get(key);
+		if (entry == null) return false; // Not present at all.
+		for (DataSource ds : entry.values)
+			if (ds != null)
+				return true; // Value present.
+		return false; // Only tombstone present, if any.
 	}
 
 }
