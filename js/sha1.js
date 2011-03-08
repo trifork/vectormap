@@ -82,8 +82,8 @@ Sha1.hash = function(msg, utf8encode) {
     H4 = (H4+e) & 0xffffffff;
   }
 
-  return Sha1.toHexStr(H0) + Sha1.toHexStr(H1) + 
-    Sha1.toHexStr(H2) + Sha1.toHexStr(H3) + Sha1.toHexStr(H4);
+  return  Sha1.toHexStr(H0) + Sha1.toHexStr(H1) + 
+	  Sha1.toHexStr(H2) + Sha1.toHexStr(H3) + Sha1.toHexStr(H4);
 }
 
 //
