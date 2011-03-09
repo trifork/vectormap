@@ -187,7 +187,7 @@ public class VectorMap implements MergeableValue {
 		ArrayList<DataSource> values =
 			new ArrayList<DataSource>(e1.values.length + e2.values.length);
 		
-		HashSet unmergeable_values = new HashSet();
+		HashSet<DataSource> unmergeable_values = new HashSet<DataSource>();
 		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values
 			= new IdentityHashMap();
 
@@ -200,35 +200,30 @@ public class VectorMap implements MergeableValue {
 
 		DataSource[] result_values = new DataSource[unmergeable_values.size() +
 													mergeable_values.size()];
+
 		return null; // TODO!
 	}
 
 	public static void insert_value(DataSource ds,
-									HashSet unmergeable_values,
+									HashSet<DataSource> unmergeable_values,
 									IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values)
 	{
-		Object decoded;
+		MergeableValue decoded;
 		try {
-			decoded = ActivationUtil.decode(ds, MergeableValue.class, byte[].class);
+			decoded = ActivationUtil.decode(ds, MergeableValue.class);
 		} catch (Exception e) {
 			// Value is undecodeable. Regard as unmergeable.
 			unmergeable_values.add(ds);
 			return;
 		}
 
-		if (decoded instanceof MergeableValue) {
-			MergeableValue mergeable_decoded = (MergeableValue)decoded;
-			Class clazz = mergeable_decoded.getClass();
-			MergeableValue existing = mergeable_values.get(clazz);
-			MergeableValue new_value =
-				(existing != null)
-				? existing.mergeWith(mergeable_decoded)
-				: mergeable_decoded;
-			mergeable_values.put(clazz, new_value);
-		} else {
-			// TODO: Merge if equal as objects?
-			unmergeable_values.add(ds/*decoded*/);
-		}
+		Class clazz = decoded.getClass();
+		MergeableValue existing = mergeable_values.get(clazz);
+		MergeableValue new_value =
+			(existing != null)
+			? existing.mergeWith(decoded)
+			: decoded;
+		mergeable_values.put(clazz, new_value);
 	}
 
 }
