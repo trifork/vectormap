@@ -24,18 +24,39 @@ public class VClock {
 		this.counters = new int[ents.length];
 		this.utc_secs = new int[ents.length];
 		
-		int max_secs = 0;
 		for (int i = 0; i < ents.length; i++) {
 			peers[i] = ents[i].getKey();
 			counters[i] = ents[i].getValue().count;
 			utc_secs[i] = ents[i].getValue().time;
-			max_secs = Math.max(max_secs, utc_secs[i]);
 		}
-		this.max_secs = max_secs;
+		this.max_secs = max(utc_secs);
 	}
 
 	public VClock(Map<String, Time> map) {
 		this(entriesByTime(map.entrySet()));
+	}
+
+	public VClock(String[] peers, int[] counters, int[] times) {
+		if (peers.length != counters.length ||
+			peers.length != times.length)
+			throw new IllegalArgumentException("VClock: array lengths do not match: "+peers.length+"/"+counters.length+"/"+times.length);
+
+		this.peers = peers;
+		this.counters = counters;
+		this.utc_secs = times;
+		this.max_secs = max(utc_secs);
+
+		for (int i=1; i<peers.length; i++) {
+			if (peers[i].compareTo(peers[i-1]) <= 0)
+				throw new IllegalArgumentException("VClock: entries are not sorrted by peer name: "+this);
+			// TODO: Handle more gracefully?
+		}
+	}
+
+	protected static int max(int[] xs) {
+		int max = Integer.MIN_VALUE;
+ 		for (int x : xs) max = Math.max(max, x);
+		return max;
 	}
 
 	public static class Time {
