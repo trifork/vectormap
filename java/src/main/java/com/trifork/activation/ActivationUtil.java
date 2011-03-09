@@ -36,7 +36,6 @@ public abstract class ActivationUtil {
 		int semi_pos = contentType.indexOf(';');
 		if (semi_pos >= 0) contentType = contentType.substring(0,semi_pos);
 
-
 		CommandMap defaultCommandMap = CommandMap.getDefaultCommandMap();
 		CommandInfo cc = defaultCommandMap.getCommand(contentType, "content-handler", ds);
 		
@@ -48,7 +47,7 @@ public abstract class ActivationUtil {
 		}
 
 		for (DataFlavor flavor : co.getTransferDataFlavors()) {
-			if (flavor.getRepresentationClass() == representationClass) {
+			if (representationClass.isAssignableFrom(flavor.getRepresentationClass())) {
 				return (T) co.getTransferData(flavor, ds);
 			}
 		}
