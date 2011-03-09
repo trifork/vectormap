@@ -13,11 +13,11 @@ import javax.activation.DataSource;
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
 
-import com.trifork.activation.ActivationUtil;
 import com.trifork.vmap.VClock.Time;
 import com.trifork.activation.ActivationUtil;
+import com.trifork.activation.ActivationUtil.Decoder;
 
-public class VectorMap implements MergeableValue {
+public class VectorMap implements MergeableValue<VectorMap> {
 
 	public static class VEntry {
 
@@ -135,13 +135,10 @@ public class VectorMap implements MergeableValue {
 
 	//==================== Merging ========================================
 
-	public <T extends MergeableValue> T mergeWith(T other) {
-		return (T) mergeWith((VectorMap)other);
-	}
 	public VectorMap mergeWith(VectorMap other) {
 		return VectorMap.merge(this,other);
 	}
-	
+
 
 	public static VectorMap merge(VectorMap v1, VectorMap v2) {
 		final HashMap<String, VEntry> union = new HashMap<String, VEntry>();
@@ -187,9 +184,15 @@ public class VectorMap implements MergeableValue {
 		ArrayList<DataSource> values =
 			new ArrayList<DataSource>(e1.values.length + e2.values.length);
 		
+
+		// We work with three collections:
+		// (1) The unmergeable values.
+		// (2) The mergeable values - not merged (and not decoded).
+		// (3) The mergeable values which have taken part in a merge.
+		// The last two are both contained in 'mergeable_values'; the undecoded ones as LazilyDecodedMergeableValue objects.
 		HashSet<DataSource> unmergeable_values = new HashSet<DataSource>();
-		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values
-			= new IdentityHashMap();
+		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values =
+			new IdentityHashMap();
 
 		for (DataSource ds : e1.values) {
 			insert_value(ds, unmergeable_values, mergeable_values);
@@ -208,22 +211,71 @@ public class VectorMap implements MergeableValue {
 									HashSet<DataSource> unmergeable_values,
 									IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values)
 	{
-		MergeableValue decoded;
+		Decoder<MergeableValue> decoder;
 		try {
-			decoded = ActivationUtil.decode(ds, MergeableValue.class);
+			decoder = ActivationUtil.getDecoder(ds.getContentType(),
+												MergeableValue.class);
 		} catch (Exception e) {
 			// Value is undecodeable. Regard as unmergeable.
 			unmergeable_values.add(ds);
 			return;
 		}
 
-		Class clazz = decoded.getClass();
-		MergeableValue existing = mergeable_values.get(clazz);
-		MergeableValue new_value =
-			(existing != null)
-			? existing.mergeWith(decoded)
-			: decoded;
-		mergeable_values.put(clazz, new_value);
+		
+		final Class repr_class = decoder.getRepresentationClass();
+		final MergeableValue existing = mergeable_values.get(repr_class);
+		MergeableValue new_value;
+		if (existing != null) {
+			final MergeableValue decoded;
+			try {
+				decoded = decoder.decode(ds);
+			} catch (IOException ioe) {
+				// Decoding of new value failed. Put in 'unmergeable_values'.
+				unmergeable_values.add(ds);
+				return;
+			}
+
+			try {
+				new_value = existing.mergeWith(decoded);
+			} catch (LazyDecodingFailedException ldfe) {
+				// Decoding of existing failed. Moved it to 'unmergeable_values':
+				unmergeable_values.add(ldfe.ds);
+				new_value = decoded;
+			}
+		} else {
+			// Delay decoding until needed:
+			new_value = new LazilyDecodedMergeableValue(ds, decoder);
+		}
+		mergeable_values.put(repr_class, new_value);
 	}
 
+
+	static class LazyDecodingFailedException extends RuntimeException {
+		final DataSource ds;
+		public LazyDecodingFailedException(DataSource ds, Throwable t) {
+			super(t);
+			this.ds = ds;
+		}
+	}
+
+	/** Placeholder for an undecoded value. */
+	static class LazilyDecodedMergeableValue<T extends MergeableValue> implements MergeableValue<T> {
+		final DataSource ds;
+		final Decoder<T> decoder;
+
+		public LazilyDecodedMergeableValue(DataSource ds, Decoder<T> decoder) {
+			this.ds = ds;
+			this.decoder = decoder;
+		}
+
+		public T mergeWith(T other) {
+			final MergeableValue<T> decoded;
+			try {
+				decoded = decoder.decode(ds);
+			} catch (IOException ioe) {
+				throw new LazyDecodingFailedException(ds, ioe);
+			}
+			return decoded.mergeWith(other);
+		}
+	}
 }
