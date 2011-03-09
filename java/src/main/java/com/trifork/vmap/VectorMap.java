@@ -13,6 +13,8 @@ import javax.activation.DataSource;
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
 
+import javax.mail.util.ByteArrayDataSource;
+
 import com.trifork.vmap.VClock.Time;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
@@ -44,6 +46,16 @@ public class VectorMap implements MergeableValue<VectorMap> {
 			throw new RuntimeException(e);
 		}
 	}
+
+	public DataSource toDatasource() {
+		try {
+			return new ByteArrayDataSource(new PBEncoder().encode(this),
+										   MIME_TYPE_PROTOBUF_STRING);
+		} catch (IOException ioe) {
+			return null; // How to handle this?...
+		}
+	}
+
 
 	private String thisPeer;
 	Map<String, VEntry> content;
@@ -185,11 +197,14 @@ public class VectorMap implements MergeableValue<VectorMap> {
 			new ArrayList<DataSource>(e1.values.length + e2.values.length);
 		
 
-		// We work with three collections:
-		// (1) The unmergeable values.
-		// (2) The mergeable values - not merged (and not decoded).
-		// (3) The mergeable values which have taken part in a merge.
-		// The last two are both contained in 'mergeable_values'; the undecoded ones as LazilyDecodedMergeableValue objects.
+		/* We work with three collections:
+		 * (1) The unmergeable values.
+		 * (2) The mergeable values - not merged (and not decoded).
+		 * (3) The mergeable values which have taken part in a merge.
+		 *  The last two are both contained in 'mergeable_values'; the
+		 *  undecoded ones as LazilyDecodedMergeableValue objects.
+		 */
+
 		HashSet<DataSource> unmergeable_values = new HashSet<DataSource>();
 		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values =
 			new IdentityHashMap();
@@ -204,7 +219,16 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		DataSource[] result_values = new DataSource[unmergeable_values.size() +
 													mergeable_values.size()];
 
-		return null; // TODO!
+		int i = 0;
+		for (MergeableValue mv : mergeable_values.values()) {
+			result_values[i++] = mv.toDatasource();
+			
+		}
+		for (DataSource ds : unmergeable_values) {
+			result_values[i++] = ds;
+		}
+
+		return new VEntry(merge_vclock, result_values);
 	}
 
 	public static void insert_value(DataSource ds,
@@ -276,6 +300,10 @@ public class VectorMap implements MergeableValue<VectorMap> {
 				throw new LazyDecodingFailedException(ds, ioe);
 			}
 			return decoded.mergeWith(other);
+		}
+
+		public DataSource toDatasource() {
+			return ds;
 		}
 	}
 }
