@@ -1,0 +1,27 @@
+<body>
+  This package handles the conversion of VectorMaps etc. to and from
+  encoded representation (i.e., (mimetype,binary) pairs).
+
+  <h2>How it works</h2>
+  Typical use for decoding a value into an object:
+  <ol>
+    <li>ApplicationUtil.decode() is called with a DataSource.
+
+    <li>(If the target representation type is one of the trivial ones:
+      DataSource, InputStream and byte[], these are handled
+      directly. Otherwise, proceed.)
+
+    <li>The content type of the DataSource is consulted, and a
+      corresponding DataContentHandler is found.
+      <br>
+      For all protocol buffer encoded data (mimetype
+      "application/x-protobuf"), for instance, this is
+      ProtobufDataContentHandler.
+
+    <li>The DataContentHandler decodes the object.
+      <br>
+      For instance, a DataSource with a mimetype of
+      "application/x-protobuf;proto=vectormap" will be decoded into a
+      VectorMap instance.
+  </ol>
+</body>
