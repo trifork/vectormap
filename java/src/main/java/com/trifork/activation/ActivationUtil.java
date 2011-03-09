@@ -1,4 +1,4 @@
-package com.trifork.vmap;
+package com.trifork.activation;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -18,17 +18,26 @@ public abstract class ActivationUtil {
 
 	public static <T> T decode(DataSource ds, Class<T> representationClass)
 			throws IOException, UnsupportedFlavorException {
+		return (T) decode(ds, representationClass, null);
+	}
+
+	/** Try decoding the DataSource first as representationClass, then
+	 * (if that fails) as fallbackClass.
+	 */
+	public static Object decode(DataSource ds,
+								Class representationClass, Class fallbackClass)
+		throws IOException, UnsupportedFlavorException {
 
 		if (representationClass == DataSource.class)
-			return (T) ds;
+			return ds;
 
 		if (representationClass == InputStream.class)
-			return (T) ds.getInputStream();
+			return ds.getInputStream();
 
 		if (representationClass == byte[].class) {
 			ByteArrayOutputStream bao = new ByteArrayOutputStream();
 			IO.copystream(ds.getInputStream(), bao);
-			return (T) bao.toByteArray();
+			return bao.toByteArray();
 		}
 
 		String contentType = ds.getContentType();
@@ -48,11 +57,14 @@ public abstract class ActivationUtil {
 
 		for (DataFlavor flavor : co.getTransferDataFlavors()) {
 			if (representationClass.isAssignableFrom(flavor.getRepresentationClass())) {
-				return (T) co.getTransferData(flavor, ds);
+				return co.getTransferData(flavor, ds);
 			}
 		}
-		
-		throw new UnsupportedEncodingException();
+
+		if (fallbackClass != null)
+			return decode(ds, fallbackClass, null);
+		else
+			throw new UnsupportedEncodingException();
 	}
 
 }

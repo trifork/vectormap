@@ -2,8 +2,10 @@ package com.trifork.vmap;
 
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.HashSet;
 import java.util.ArrayList;
 
 import javax.activation.DataHandler;
@@ -13,8 +15,9 @@ import javax.activation.MimeTypeParseException;
 
 import com.trifork.activation.ActivationUtil;
 import com.trifork.vmap.VClock.Time;
+import com.trifork.activation.ActivationUtil;
 
-public class VectorMap {
+public class VectorMap implements MergeableValue {
 
 	public static class VEntry {
 
@@ -34,7 +37,7 @@ public class VectorMap {
 	static {
 		try {
 			MIME_TYPE_PROTOBUF = new MimeType("application", "x-protobuf");
-			MIME_TYPE_PROTOBUF.setParameter("proto", "vectormap.proto");
+			MIME_TYPE_PROTOBUF.setParameter("proto", "vectormap");
 			MIME_TYPE_PROTOBUF.setParameter("message", "PBVectorMap");
 			MIME_TYPE_PROTOBUF_STRING = MIME_TYPE_PROTOBUF.toString();
 		} catch (MimeTypeParseException e) {
@@ -132,6 +135,14 @@ public class VectorMap {
 
 	//==================== Merging ========================================
 
+	public <T extends MergeableValue> T mergeWith(T other) {
+		return (T) mergeWith((VectorMap)other);
+	}
+	public VectorMap mergeWith(VectorMap other) {
+		return VectorMap.merge(this,other);
+	}
+	
+
 	public static VectorMap merge(VectorMap v1, VectorMap v2) {
 		final HashMap<String, VEntry> union = new HashMap<String, VEntry>();
 
@@ -176,6 +187,48 @@ public class VectorMap {
 		ArrayList<DataSource> values =
 			new ArrayList<DataSource>(e1.values.length + e2.values.length);
 		
+		HashSet unmergeable_values = new HashSet();
+		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values
+			= new IdentityHashMap();
+
+		for (DataSource ds : e1.values) {
+			insert_value(ds, unmergeable_values, mergeable_values);
+		}
+		for (DataSource ds : e2.values) {
+			insert_value(ds, unmergeable_values, mergeable_values);
+		}
+
+		DataSource[] result_values = new DataSource[unmergeable_values.size() +
+													mergeable_values.size()];
 		return null; // TODO!
 	}
+
+	public static void insert_value(DataSource ds,
+									HashSet unmergeable_values,
+									IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values)
+	{
+		Object decoded;
+		try {
+			decoded = ActivationUtil.decode(ds, MergeableValue.class, byte[].class);
+		} catch (Exception e) {
+			// Value is undecodeable. Regard as unmergeable.
+			unmergeable_values.add(ds);
+			return;
+		}
+
+		if (decoded instanceof MergeableValue) {
+			MergeableValue mergeable_decoded = (MergeableValue)decoded;
+			Class clazz = mergeable_decoded.getClass();
+			MergeableValue existing = mergeable_values.get(clazz);
+			MergeableValue new_value =
+				(existing != null)
+				? existing.mergeWith(mergeable_decoded)
+				: mergeable_decoded;
+			mergeable_values.put(clazz, new_value);
+		} else {
+			// TODO: Merge if equal as objects?
+			unmergeable_values.add(ds/*decoded*/);
+		}
+	}
+
 }
