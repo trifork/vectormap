@@ -11,6 +11,7 @@ import javax.activation.DataSource;
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
 
+import com.trifork.activation.ActivationUtil;
 import com.trifork.vmap.VClock.Time;
 
 public class VectorMap {
