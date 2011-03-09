@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.ArrayList;
 
 import javax.activation.DataHandler;
@@ -56,7 +57,6 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		}
 	}
 
-
 	private String thisPeer;
 	Map<String, VEntry> content;
 	private VClock update_vclock;
@@ -95,6 +95,10 @@ public class VectorMap implements MergeableValue<VectorMap> {
 	}
 
 	//==================== Basic map methods ==============================
+
+	public int size() {
+		return content.size();
+	}
 
 	public <T> T get(String key, Class<T> representationClass)
 			throws UnsupportedFlavorException, IOException {
@@ -144,6 +148,17 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		return false; // Only tombstone present, if any.
 	}
 
+	//==================== Extra accessor methods ====================
+
+	public List<String> conflicts() {
+		List<String> conflict_keys = new ArrayList<String>();
+		for (Map.Entry<String,VEntry> e : content.entrySet()) {
+			if (e.getValue().values.length > 1)
+				conflict_keys.add(e.getKey());
+		}
+		return conflict_keys;
+	}
+	
 
 	//==================== Merging ========================================
 
