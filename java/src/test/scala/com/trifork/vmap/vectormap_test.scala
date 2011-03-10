@@ -114,8 +114,10 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
       val edit1 = performUpdate(new VectorMap(org), (peer1, key, v1 map {_.string}))
       val edit2 = performUpdate(new VectorMap(org), (peer2, key, v2 map {_.string}))
       val mrg = VectorMap.merge(edit1, edit2);
-      val expectedConflicts = if (v1 == v2) 0 else 1;
-      (peer1 == peer2) || (mrg.conflicts.size() == expectedConflicts)
+      // If peer1==peer2 there may or may not be a conflict.
+      val expectedConflicts = if (peer1==peer2) -1 else if (v1 == v2) 0 else 1;
+      Prop.collect(expectedConflicts)(mrg.conflicts.size() == expectedConflicts ||
+				    expectedConflicts == -1)
     }
       
   "VectorMap.merge()" should {
