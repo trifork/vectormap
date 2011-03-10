@@ -87,6 +87,13 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		put(key, "application/octet-stream", data);
 	}
 
+	public <T extends MergeableValue<T>> void put(String key, T m) throws IOException {
+		put(key, m.toDatasource());
+	}
+	public void put2(String key, Object m) throws IOException { // For Scala visibility... :-|
+		put(key, (MergeableValue)m);
+	}
+
 	public void put(String key, String mimeType, Object value)
 			throws IOException {
 		put(key, new DataHandler(value, mimeType).getDataSource());

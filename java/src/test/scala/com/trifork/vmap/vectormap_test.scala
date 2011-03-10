@@ -9,7 +9,11 @@ import org.specs.runner.JUnit4
 
 import scala.collection.immutable.Map
 
+import com.trifork.activation.ProtobufDataContentHandler
+
 trait VMapGenerators extends VClockGenerators {
+  def nullToNone[T](x:T) = Option.apply(x)
+
   type Update = (PeerName, String, Option[String]);
 
   val genUpdate : Gen[Update] =
@@ -57,6 +61,8 @@ trait VMapGenerators extends VClockGenerators {
 class VectorMapRandomTest extends AbstractTest(VectorMapSpec);
 
 object VectorMapSpec extends MySpecification with VClockGenerators with VMapGenerators {
+  // We need to install this content handler before running some of the tests:
+  {ProtobufDataContentHandler.install();}
 
   val containsIsLikeSet =
     (updates : List[(PeerName, String, Option[String])]) =>
@@ -72,8 +78,9 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
       {
 	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map())
 	val (vmap, map) = updates.foldLeft(initial)(performUpdate(_,_));
+
+	// Verify:
 	val keys = updates.map {_._2}
-	def nullToNone[T](x:T) = Option.apply(x)
 	val strClass = classOf[String]
 	val r1 = (keys map {k=>nullToNone(vmap.get(k,strClass))});
 	val r2 = (keys map {map.get(_)});
@@ -99,6 +106,38 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
       ("result in map of same size" |: forAll(mergeWithSameYieldsSameSize)) &&
       ("result in map with no conflicts" |: forAll(mergeWithSameYieldsNoConflicts))
     )
+  }
+
+  def performSimpleNestedUpdate(mainKey:String, org:(VectorMap,Map[String,String]), update:Update)
+  : (VectorMap,Map[String,String]) = {
+    val (vmap,map) = org;
+    vmap.put2(mainKey,
+	      performUpdate(vmap.get(mainKey,classOf[VectorMap]), update))
+    (vmap, performUpdate(map,update))
+  }
+
+  val nestedGetIsLikeMap =
+    (mainKey:String, updates : List[(PeerName, String, Option[String])]) =>
+      {
+	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map());
+	initial._1.setThisPeer("main_editor");
+	initial._1.put2(mainKey, new VectorMap())
+	val (vmap, map) = updates.foldLeft(initial)(performSimpleNestedUpdate(mainKey,_,_));
+
+	// Verify:
+	val keys = updates.map {_._2}
+
+	val submap = vmap.get(mainKey, classOf[VectorMap])
+	val strClass = classOf[String]
+	val r1 = (keys map {k=>nullToNone(submap.get(k,strClass))});
+	val r2 = (keys map {map.get(_)});
+	r1==r2
+      }
+
+  "VectorMap" should {
+    "support simple nested maps" >> check(forAll(for (u<-genUpdates;
+						      k<-genSaneString) yield (k,u))
+					  (x=>nestedGetIsLikeMap(x._1,x._2)))
   }
 
 }

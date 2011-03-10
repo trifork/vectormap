@@ -95,6 +95,8 @@ public abstract class ActivationUtil {
 
 		CommandMap defaultCommandMap = CommandMap.getDefaultCommandMap();
 		CommandInfo cc = defaultCommandMap.getCommand(contentType, "content-handler");
+
+		if (cc==null) throw new UnsupportedEncodingException("No content handler found for "+contentType);
 		
 		DataContentHandler co;
 		try {
