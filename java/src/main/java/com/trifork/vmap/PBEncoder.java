@@ -118,7 +118,7 @@ public class PBEncoder {
 		collectString(stringPool, key);
 		
 		for (DataSource o : ent.values) {
-			collectString(stringPool, o.getContentType());
+			if (o!=null) collectString(stringPool, o.getContentType());
 		}
 
 		for (String peer : ent.vClock.peers) {
