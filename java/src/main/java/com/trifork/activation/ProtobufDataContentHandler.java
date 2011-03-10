@@ -9,7 +9,6 @@ import java.io.OutputStream;
 import javax.activation.ActivationDataFlavor;
 import javax.activation.CommandMap;
 import javax.activation.DataContentHandler;
-import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.MailcapCommandMap;
 

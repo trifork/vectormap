@@ -76,6 +76,7 @@ public abstract class ActivationUtil {
 		return getDecoder(ds.getContentType(), representationClass);
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <T> Decoder<T> getDecoder(String contentType, Class<T> representationClass)
 		throws IOException, UnsupportedFlavorException {
 
@@ -104,7 +105,7 @@ public abstract class ActivationUtil {
 
 		for (DataFlavor flavor : co.getTransferDataFlavors()) {
 			if (representationClass.isAssignableFrom(flavor.getRepresentationClass())) {
-				return new DataContentHandlerDecoder(co,flavor);
+				return new DataContentHandlerDecoder<T>(co,flavor);
 			}
 		}
 		

@@ -16,7 +16,6 @@ import javax.activation.MimeTypeParseException;
 
 import javax.mail.util.ByteArrayDataSource;
 
-import com.trifork.vmap.VClock.Time;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
 
@@ -83,7 +82,6 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		this(new HashMap<String, VEntry>());
 	}
 
-	@SuppressWarnings("unchecked")
 	private VClock computeUpdateVClock() {
 		Map<String, VClock.Time> lub = new HashMap<String, VClock.Time>();
 		for (VEntry ent : content.values()) {
@@ -208,9 +206,6 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		}
 
 		VClock merge_vclock = VClock.lub(e1.vClock, e2.vClock);
-		ArrayList<DataSource> values =
-			new ArrayList<DataSource>(e1.values.length + e2.values.length);
-		
 
 		/* We work with three collections:
 		 * (1) The unmergeable values.
@@ -222,7 +217,7 @@ public class VectorMap implements MergeableValue<VectorMap> {
 
 		HashSet<DataSource> unmergeable_values = new HashSet<DataSource>();
 		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values =
-			new IdentityHashMap();
+			new IdentityHashMap<Class<? extends MergeableValue>, MergeableValue>();
 
 		for (DataSource ds : e1.values) {
 			insert_value(ds, unmergeable_values, mergeable_values);
@@ -261,9 +256,9 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		}
 
 		
-		final Class repr_class = decoder.getRepresentationClass();
+		final Class<? extends MergeableValue> repr_class = decoder.getRepresentationClass();
 		final MergeableValue existing = mergeable_values.get(repr_class);
-		MergeableValue new_value;
+		MergeableValue<?> new_value;
 		if (existing != null) {
 			final MergeableValue decoded;
 			try {
