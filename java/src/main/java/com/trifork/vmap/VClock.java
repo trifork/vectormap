@@ -188,6 +188,9 @@ public class VClock {
 					result |= BEFORE;
 				} else if (cnt1 > cnt2) { // vc1 is newer
 					result |= AFTER;
+				} else if (/* cnt1==cnt2 && */ 
+						vc1.utc_secs[i1] != vc2.utc_secs[i2]) {
+					result |= CONCURRENT;
 				}
 				i1++; i2++;
 			} else if (peercmp < 0) { // peer 1 not present in vc2
