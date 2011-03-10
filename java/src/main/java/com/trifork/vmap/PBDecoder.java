@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.activation.DataSource;
 
 import com.trifork.activation.BSDataSource;
+import com.trifork.activation.RichDataSource;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBEntry;
 import com.trifork.vmap.protobuf.PB.PBValue;
@@ -59,14 +60,14 @@ public class PBDecoder {
 	}
 
 	private static VEntry decode(PBEntry ent, VClock[] clocks, PBVectorMap vm) {
-		DataSource[] values = decodeValues(ent, vm);
+		RichDataSource[] values = decodeValues(ent, vm);
 		return new VEntry(clocks[ent.getClock()], values);
 	}
 
-	private static DataSource[] decodeValues(PBEntry ent, PBVectorMap vm) {
-		DataSource[] results = new DataSource[ent.getValuesCount()];
+	private static RichDataSource[] decodeValues(PBEntry ent, PBVectorMap vm) {
+		RichDataSource[] results = new RichDataSource[ent.getValuesCount()];
 		for (int i = 0; i < results.length; i++) {
-			results[i] = decodeValue(ent.getValues(i), vm);
+			results[i] = RichDataSource.make(decodeValue(ent.getValues(i), vm));
 		}
 		return results;
 	}

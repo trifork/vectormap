@@ -14,6 +14,7 @@ import javax.activation.MimeTypeParseException;
 
 import javax.mail.util.ByteArrayDataSource;
 
+import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 
 public class VectorMap implements MergeableValue<VectorMap> {
@@ -66,15 +67,16 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		VEntry enc = content.get(key);
 		if (enc == null)
 			return null;
-		DataSource encodedValue = enc.values[0];
+		RichDataSource encodedValue = enc.values[0];
 		if (encodedValue == null)
 			return null;
 
-		return ActivationUtil.decode(encodedValue, representationClass);
+		return ActivationUtil.decode(encodedValue.getDataSource(),
+									 representationClass);
 	}
 
 	public void remove(String key) {
-		put(key, (DataSource)null);
+		put(key, (RichDataSource)null);
 	}
 
 	public void put(String key, String string) throws IOException {
@@ -91,18 +93,22 @@ public class VectorMap implements MergeableValue<VectorMap> {
 	}
 
 	public void put(String key, DataSource ds) {
+		put(key, RichDataSource.make(ds));
+	}
+
+	public void put(String key, RichDataSource ds) {
 		update_vclock.timeStamp(thisPeer);
 		if (ds == null) { // TODO: Why this test?
-			content.put(key, new VEntry(update_vclock, new DataSource[] { null }));
+			content.put(key, new VEntry(update_vclock, new RichDataSource[] { null }));
 		} else {
-			content.put(key, new VEntry(update_vclock, new DataSource[] { ds }));
+			content.put(key, new VEntry(update_vclock, new RichDataSource[] { ds }));
 		}
 	}
 
 	public boolean containsKey(String key) {
 		VEntry entry = content.get(key);
 		if (entry == null) return false; // Not present at all.
-		for (DataSource ds : entry.values)
+		for (RichDataSource ds : entry.values)
 			if (ds != null)
 				return true; // Value present.
 		return false; // Only tombstone present, if any.

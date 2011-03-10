@@ -5,17 +5,19 @@ import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.HashSet;
 
+import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
+import com.trifork.activation.IO;
 
 /** Multi-version value entry.
  */
 public class VEntry {
 
 	public final VClock vClock;
-	public final DataSource[] values;
+	public final RichDataSource[] values;
 
-	public VEntry(VClock vClock, DataSource[] ds) {
+	public VEntry(VClock vClock, RichDataSource[] ds) {
 		this.vClock = vClock;
 		this.values = ds;
 	}
@@ -48,34 +50,35 @@ public class VEntry {
 		 *  undecoded ones as LazilyDecodedMergeableValue objects.
 		 */
 
-		HashSet<DataSource> unmergeable_values = new HashSet<DataSource>();
+		HashSet<RichDataSource> unmergeable_values = new HashSet<RichDataSource>();
 		IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values =
 			new IdentityHashMap<Class<? extends MergeableValue>, MergeableValue>();
 
-		for (DataSource ds : e1.values) {
+		for (RichDataSource ds : e1.values) {
 			insert_value(ds, unmergeable_values, mergeable_values);
 		}
-		for (DataSource ds : e2.values) {
+		for (RichDataSource ds : e2.values) {
 			insert_value(ds, unmergeable_values, mergeable_values);
 		}
 
-		DataSource[] result_values = new DataSource[unmergeable_values.size() +
-													mergeable_values.size()];
+		RichDataSource[] result_values =
+			new RichDataSource[unmergeable_values.size() +
+							   mergeable_values.size()];
 
 		int i = 0;
 		for (MergeableValue mv : mergeable_values.values()) {
-			result_values[i++] = mv.toDatasource();
+			result_values[i++] = RichDataSource.make(mv.toDatasource());
 			
 		}
-		for (DataSource ds : unmergeable_values) {
+		for (RichDataSource ds : unmergeable_values) {
 			result_values[i++] = ds;
 		}
 
 		return new VEntry(merge_vclock, result_values);
 	}
 
-	public static void insert_value(DataSource ds,
-									HashSet<DataSource> unmergeable_values,
+	public static void insert_value(RichDataSource ds,
+									HashSet<RichDataSource> unmergeable_values,
 									IdentityHashMap<Class<? extends MergeableValue>, MergeableValue> mergeable_values)
 	{
 		Decoder<MergeableValue> decoder;
@@ -95,7 +98,7 @@ public class VEntry {
 		if (existing != null) {
 			final MergeableValue decoded;
 			try {
-				decoded = decoder.decode(ds);
+				decoded = decoder.decode(ds.getDataSource());
 			} catch (IOException ioe) {
 				// Decoding of new value failed. Put in 'unmergeable_values'.
 				unmergeable_values.add(ds);
@@ -118,8 +121,8 @@ public class VEntry {
 
 
 	static class LazyDecodingFailedException extends RuntimeException {
-		final DataSource ds;
-		public LazyDecodingFailedException(DataSource ds, Throwable t) {
+		final RichDataSource ds;
+		public LazyDecodingFailedException(RichDataSource ds, Throwable t) {
 			super(t);
 			this.ds = ds;
 		}
@@ -127,10 +130,10 @@ public class VEntry {
 
 	/** Placeholder for an undecoded value. */
 	static class LazilyDecodedMergeableValue<T extends MergeableValue> implements MergeableValue<T> {
-		final DataSource ds;
+		final RichDataSource ds;
 		final Decoder<T> decoder;
 
-		public LazilyDecodedMergeableValue(DataSource ds, Decoder<T> decoder) {
+		public LazilyDecodedMergeableValue(RichDataSource ds, Decoder<T> decoder) {
 			this.ds = ds;
 			this.decoder = decoder;
 		}
@@ -138,7 +141,7 @@ public class VEntry {
 		public T mergeWith(T other) {
 			final MergeableValue<T> decoded;
 			try {
-				decoded = decoder.decode(ds);
+				decoded = decoder.decode(ds.getDataSource());
 			} catch (IOException ioe) {
 				throw new LazyDecodingFailedException(ds, ioe);
 			}
