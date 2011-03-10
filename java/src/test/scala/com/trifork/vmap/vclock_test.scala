@@ -53,11 +53,9 @@ trait VClockGenerators {
 
 
   // Type aliases for easy data generation purposes:
-  /*
    case class SaneString(string:String);
    implicit def unwrapSaneString(x:SaneString) : String = x.string;
    implicit val arbSaneString: Arbitrary[SaneString] = Arbitrary(genSaneString map {x=>SaneString(x)})
-   */
 
   case class PeerName(name:String);
   def genPeerName : Gen[PeerName] = genPeer map {x=>PeerName(x)}

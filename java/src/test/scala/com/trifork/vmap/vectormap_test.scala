@@ -108,6 +108,20 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
     )
   }
 
+  val mergeDetectsSimpleConflicts =
+    (org: VectorMap, peer1: PeerName, peer2: PeerName, k: SaneString, v1: Option[SaneString], v2: Option[SaneString]) => {
+      val key = k.string;
+      val edit1 = performUpdate(new VectorMap(org), (peer1, key, v1 map {_.string}))
+      val edit2 = performUpdate(new VectorMap(org), (peer2, key, v2 map {_.string}))
+      val mrg = VectorMap.merge(edit1, edit2);
+      val expectedConflicts = if (v1 == v2) 0 else 1;
+      (peer1 == peer2) || (mrg.conflicts.size() == expectedConflicts)
+    }
+      
+  "VectorMap.merge()" should {
+    "detect simple conflicts correctly" >> check(forAll(mergeDetectsSimpleConflicts))
+  }
+
   def performSimpleNestedUpdate(mainKey:String, org:(VectorMap,Map[String,String]), update:Update)
   : (VectorMap,Map[String,String]) = {
     val (vmap,map) = org;

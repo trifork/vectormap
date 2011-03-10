@@ -45,6 +45,10 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		this(new HashMap<String, VEntry>());
 	}
 
+	public VectorMap(VectorMap org) throws IOException {
+		this(org.thisPeer, new HashMap(org.content));
+	}
+
 	private VClock computeUpdateVClock() {
 		Map<String, VClock.Time> lub = new HashMap<String, VClock.Time>();
 		for (VEntry ent : content.values()) {
