@@ -3,6 +3,7 @@ package com.trifork.activation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import javax.activation.DataSource;
 
@@ -36,6 +37,10 @@ public class BSDataSource implements DataSource {
 	@Override
 	public OutputStream getOutputStream() throws IOException {
 		return null;
+	}
+
+	public ByteBuffer getByteBuffer() {
+		return data.asReadOnlyByteBuffer();
 	}
 
 }
