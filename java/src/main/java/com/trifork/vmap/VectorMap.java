@@ -18,29 +18,6 @@ import com.trifork.activation.ActivationUtil;
 
 public class VectorMap implements MergeableValue<VectorMap> {
 
-	public static final String MIME_TYPE_PROTOBUF_STRING;
-	public static final MimeType MIME_TYPE_PROTOBUF;
-
-	static {
-		try {
-			MIME_TYPE_PROTOBUF = new MimeType("application", "x-protobuf");
-			MIME_TYPE_PROTOBUF.setParameter("proto", "vectormap");
-			MIME_TYPE_PROTOBUF.setParameter("message", "PBVectorMap");
-			MIME_TYPE_PROTOBUF_STRING = MIME_TYPE_PROTOBUF.toString();
-		} catch (MimeTypeParseException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public DataSource toDatasource() {
-		try {
-			return new ByteArrayDataSource(new PBEncoder().encode(this),
-										   MIME_TYPE_PROTOBUF_STRING);
-		} catch (IOException ioe) {
-			return null; // How to handle this?...
-		}
-	}
-
 	private String thisPeer;
 	Map<String, VEntry> content;
 	private VClock update_vclock;
@@ -172,5 +149,30 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		}
 	
 		return new VectorMap(union);
+	}
+
+	//==================== Conversion to DataSource ====================
+
+	public static final String MIME_TYPE_PROTOBUF_STRING;
+	public static final MimeType MIME_TYPE_PROTOBUF;
+
+	static {
+		try {
+			MIME_TYPE_PROTOBUF = new MimeType("application", "x-protobuf");
+			MIME_TYPE_PROTOBUF.setParameter("proto", "vectormap");
+			MIME_TYPE_PROTOBUF.setParameter("message", "PBVectorMap");
+			MIME_TYPE_PROTOBUF_STRING = MIME_TYPE_PROTOBUF.toString();
+		} catch (MimeTypeParseException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public DataSource toDatasource() {
+		try {
+			return new ByteArrayDataSource(new PBEncoder().encode(this),
+										   MIME_TYPE_PROTOBUF_STRING);
+		} catch (IOException ioe) {
+			return null; // How to handle this?...
+		}
 	}
 }
