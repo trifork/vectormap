@@ -11,7 +11,6 @@ import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteString.Output;
 import com.trifork.activation.IO;
-import com.trifork.vmap.VectorMap.VEntry;
 import com.trifork.vmap.protobuf.PB;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBValue;
@@ -32,7 +31,7 @@ public class PBEncoder {
 
 	public static PBVectorMap toMessage(VectorMap vmap) throws IOException {
 	
-		Map<String,VectorMap.VEntry> content = vmap.content;
+		Map<String,VEntry> content = vmap.content;
 		
 		PBVectorMap.Builder builder = PBVectorMap.newBuilder();
 	
@@ -43,7 +42,7 @@ public class PBEncoder {
 		Map<String, Integer> string_pool = new HashMap<String, Integer>();
 		Map<VClock, Integer> clock_pool = new HashMap<VClock, Integer>();
 	
-		for (Map.Entry<String, VectorMap.VEntry> ent : content.entrySet()) {
+		for (Map.Entry<String, VEntry> ent : content.entrySet()) {
 			collectConstants(string_pool, clock_pool, ent.getKey(), ent
 					.getValue());
 		}
@@ -80,9 +79,9 @@ public class PBEncoder {
 		
 		// Emit Entries
 		
-		for (Map.Entry<String, VectorMap.VEntry> ent : content.entrySet()) {
+		for (Map.Entry<String, VEntry> ent : content.entrySet()) {
 			String key = ent.getKey();
-			VectorMap.VEntry ve = ent.getValue();
+			VEntry ve = ent.getValue();
 			
 			// encode the value						
 			PB.PBEntry.Builder eb = encodeEntry(string_pool, clock_pool, key, ve);
@@ -93,7 +92,7 @@ public class PBEncoder {
 	}
 
 	public static PB.PBEntry.Builder encodeEntry(Map<String, Integer> string_pool,
-			Map<VClock, Integer> clock_pool, String key, VectorMap.VEntry ve) throws IOException {
+			Map<VClock, Integer> clock_pool, String key, VEntry ve) throws IOException {
 		PB.PBEntry.Builder eb = PB.PBEntry.newBuilder();
 		eb.setKey(key);
 		eb.setClock( clock_pool.get( ve.vClock )  );
