@@ -24,6 +24,12 @@ public abstract class Digest {
 		return md.digest();
 	}
 
+	public static byte[] digestOf(byte[] data) {
+		MessageDigest md = createSHA1();
+		md.update(data);
+		return md.digest();
+	}
+
 
 	/** Perform a MessageDigest.update() on the contents of ds.
 	 *  Try to avoid copying when possible.
