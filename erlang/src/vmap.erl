@@ -14,7 +14,7 @@
 -author("Kresten Krab Thorup <krab@trifork.com>").
 
 -define(TOMBSTONE_SHA, 
-	<<1,100,93,2,115,107,139,136,90,5,162,35,72,251,129,155,198,155,143,204>>).
+	<<0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0>>).
 
 -include("vmap_internal.hrl").
 
@@ -87,7 +87,7 @@ add(Datum,VMap) ->
 	     vmap()) -> vmap().
 
 store(Key, {mime,ContentType,Body}, VMap) ->
-    do_store(Key,#vmime{mime_type=ContentType,body=Body},VMap);
+    do_store(Key,create_vmime(ContentType,Body),VMap);
 store(Key, #vmap{}=Value, VMap) ->
     do_store(Key,Value,VMap);
 store(Key, AM, VMap) when is_atom(AM) ->
@@ -127,6 +127,10 @@ do_store(Key, Value, #vmap{ update_peer=Peer, dict=Dict }=VMap) when Peer =/= un
 	      hash=undefined
 	     }
     end.
+
+create_vmime(ContentType,Body) when is_binary(ContentType), is_binary(Body) ->
+    VMime = #vmime{mime_type=ContentType,body=Body},
+    VMime#vmime{hash = datum_hash(VMime)}.
 
 -spec merge(Map1::vmap(), Map2::vmap()) -> vmap().
 merge(#vmap{dict=D1}, #vmap{dict=D2}) ->
@@ -250,8 +254,9 @@ datum_hash(#vmime{hash=Hash}) when Hash =/= undefined ->
 datum_hash(#vmime{mime_type= <<_/binary>>=ContentType, body= <<_/binary>>=Body}) ->
     C0 = crypto:sha_init(),
     C1 = crypto:sha_update(C0, ContentType),
-    C2 = crypto:sha_update(C1, Body),
-    crypto:sha_final(C2);
+    C2 = crypto:sha_update(C1, <<"\n">>),
+    C3 = crypto:sha_update(C2, Body),
+    crypto:sha_final(C3);
 datum_hash(Binary) when is_binary(Binary) ->
     crypto:sha(Binary);
 datum_hash(tombstone) ->
@@ -411,9 +416,8 @@ vobj_test() ->
 
     C1 = [{<<"jens">>,1,1298629834},{<<"peter">>,1,1298629834}],
     X1 = #vobj{vclock=C1,
-               values=[#vmime{mime_type= <<"text/plain;charset=utf-8">>,
-			      hash= <<136,67,215,249,36,22>>,
-			      body= <<"foobar">>}]},
+               values=[create_vmime(<<"text/plain;charset=utf-8">>,
+				    <<"foobar">>)]},
     
     C2 = [{<<"anders">>,1,1298629834},{<<"jens">>,1,1298629834}],
     X2 = #vobj{vclock=C2, values=[tombstone]},
