@@ -5,14 +5,17 @@ import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.HashSet;
 
+import java.security.MessageDigest;
+
 import com.trifork.activation.RichDataSource;
+import com.trifork.activation.Digestable;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
 import com.trifork.activation.IO;
 
 /** Multi-version value entry.
  */
-public class VEntry {
+public class VEntry implements Digestable {
 
 	public final VClock vClock;
 	public final RichDataSource[] values;
@@ -20,6 +23,16 @@ public class VEntry {
 	public VEntry(VClock vClock, RichDataSource[] ds) {
 		this.vClock = vClock;
 		this.values = ds;
+	}
+
+	//==================== Hashing ==============================
+
+	public void updateDigest(MessageDigest md) {
+		// TODO: Add separators?
+		for (int i=0; i<values.length; i++) {
+			values[i].updateDigest(md);
+		}
+		vClock.updateDigest(md);
 	}
 
 	//==================== Merging ========================================

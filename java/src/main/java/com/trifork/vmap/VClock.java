@@ -10,7 +10,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collection;
 
-public class VClock {
+import java.security.MessageDigest;
+
+import com.trifork.activation.Digestable;
+
+public class VClock implements Digestable {
 
 	final String[] peers;
 	final int[] counters;
@@ -213,6 +217,23 @@ public class VClock {
 		return result;
 	}
 
+	//==================== Hashing ==============================
+
+	public void updateDigest(MessageDigest md) {
+		// TODO: Add separators?
+		try {
+			for (int i=0; i<peers.length; i++) {
+				// TODO: Perhaps use a CharsetEncoder instead.
+				md.update(peers[i].getBytes("UTF-8"));
+				md.update(String.valueOf(counters[i]).getBytes("US-ASCII"));
+				md.update(String.valueOf(utc_secs[i]).getBytes("US-ASCII"));
+			}
+		} catch (java.io.UnsupportedEncodingException uee) {
+			throw new RuntimeException(uee); // Should never happen.
+		}
+	}
+
+	//==================== Construction helpers ====================
 
 	/** Convert an Entry set to a array, sorted by time. */
 	protected static Entry<String, Time>[] entriesByTime(Collection<Entry<String, Time>> org) {
