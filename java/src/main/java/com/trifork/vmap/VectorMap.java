@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Arrays;
+import java.security.MessageDigest;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -14,14 +17,17 @@ import javax.activation.MimeTypeParseException;
 
 import javax.mail.util.ByteArrayDataSource;
 
+import com.trifork.activation.Digest;
+import com.trifork.activation.Digestable;
 import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 
-public class VectorMap implements MergeableValue<VectorMap> {
+public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 
 	private String thisPeer;
 	Map<String, VEntry> content;
 	private VClock update_vclock;
+	private byte[] hash;
 
 	protected VectorMap(Map<String, VEntry> content) {
 		this.content = content;
@@ -114,6 +120,7 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		} else {
 			content.put(key, new VEntry(update_vclock, new RichDataSource[] { ds }));
 		}
+		hash = null;
 	}
 
 	public boolean containsKey(String key) {
@@ -135,7 +142,41 @@ public class VectorMap implements MergeableValue<VectorMap> {
 		}
 		return conflict_keys;
 	}
+
 	
+	//==================== Hashing ====================
+	protected byte[] hash() {
+		if (hash==null) hash = computeHash();
+		return hash;
+	}
+
+	protected byte[] computeHash() {
+		return Digest.digestOf(this);
+	}
+
+	public void updateDigest(MessageDigest md) {
+		Map.Entry<String, VEntry>[] entries =
+			content.entrySet().toArray(new Map.Entry[content.size()]);
+		Arrays.sort(entries, COMPARE_MAP_ENTRY_BY_KEY);
+
+		try {
+			for (Map.Entry<String, VEntry> e : entries) {
+				//TODO: Separators?
+				md.update(e.getKey().getBytes("UTF-8"));
+				e.getValue().updateDigest(md);
+			}
+		} catch (java.io.UnsupportedEncodingException uee) {
+			throw new RuntimeException(uee); // Should never happen.
+		}
+	}
+
+	public static final Comparator<Map.Entry<String, VEntry>> COMPARE_MAP_ENTRY_BY_KEY =
+		new  Comparator<Map.Entry<String, VEntry>>() {
+		public int compare(Map.Entry<String, VEntry> e1, Map.Entry<String, VEntry> e2) {
+			return e1.getKey().compareTo(e2.getKey());
+		}
+	};
+
 
 	//==================== Merging ========================================
 

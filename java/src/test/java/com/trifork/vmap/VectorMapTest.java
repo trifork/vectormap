@@ -84,6 +84,24 @@ public class VectorMapTest {
  		checkHash(ve3, new byte[] {-38,-111,-94,79,-127,-85,83,62,68,-80,75,39,78,-4,103,-75,1,48,104,23});
 	}
 
+	@Test
+	public void testVectorMapHashing() throws IOException, UnsupportedFlavorException {
+		VClock vc1 = createVClock1();
+
+		RichDataSource ds1 = makeDataSource("Hello World", TEXT_UTF8);
+		RichDataSource ds2 = makeDataSource("Testing ÆØÅ", TEXT_UTF8);
+		RichDataSource ds3 = makeDataSource("Music: ♩♪♬", TEXT_UTF8);
+
+		VEntry ve1 = new VEntry(vc1, new RichDataSource[] {ds1});
+		VEntry ve2 = new VEntry(vc1, new RichDataSource[] {ds1, ds2});
+		VEntry ve3 = new VEntry(vc1, new RichDataSource[] {ds1, ds2, ds3});
+
+		HashMap<String,VEntry> raw_map = new HashMap<String,VEntry>();
+		raw_map.put("hello", ve1);
+		VectorMap vmap1 = new VectorMap(raw_map);
+
+ 		checkHash(vmap1, new byte[] {0}); //TODO!
+	}
 
 	private static void checkHash(Digestable data, byte[] expected_hash) {
 		assertArrayEquals(expected_hash, Digest.digestOf(data));
