@@ -4,6 +4,7 @@ import javax.activation.DataSource;
 import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.HashSet;
+import java.util.Arrays;
 
 import java.security.MessageDigest;
 
@@ -28,9 +29,11 @@ public class VEntry implements Digestable {
 	//==================== Hashing ==============================
 
 	public void updateDigest(MessageDigest md) {
+		Arrays.sort(values, RichDataSource.BY_HASH);
+
 		// TODO: Add separators?
-		for (int i=0; i<values.length; i++) {
-			values[i].updateDigest(md);
+		for (RichDataSource v : values) {
+			v.updateDigest(md);
 		}
 		vClock.updateDigest(md);
 	}

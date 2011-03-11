@@ -5,6 +5,7 @@ import javax.activation.DataSource;
 import java.security.MessageDigest;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -88,6 +89,23 @@ public class RichDataSource implements DataSource, Digestable {
 				(hash[1] << 8) |
 				(hash[2] << 16) |
 				(hash[3] << 24));
-					
 	}
+
+	//========== Sort by hash: ========================================
+	public static final Comparator<RichDataSource> BY_HASH =
+		new ByHashComparator();
+	public static class ByHashComparator implements Comparator<RichDataSource> {
+		public int compare(RichDataSource ds1, RichDataSource ds2) {
+			byte[] hash1 = ds1.hash();
+			byte[] hash2 = ds2.hash();
+
+			// Compare bytes unsigned:
+			for (int i=0; i<20; i++) {
+				int diff = (hash1[i] & 0xff) - (hash2[i] & 0xff);
+				if (diff != 0) return diff;
+			}
+			return 0;			
+		}
+	}
+
 }
