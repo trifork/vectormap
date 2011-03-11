@@ -3,7 +3,6 @@ package com.trifork.activation;
 import javax.activation.DataSource;
 
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.io.IOException;
@@ -13,7 +12,7 @@ import java.io.OutputStream;
 /** Decoration of a DataSource with a cached hash code computed from
  * the content-type and bytes of original.
  */
-public class RichDataSource implements DataSource {
+public class RichDataSource implements DataSource, Digestable {
 	private final DataSource data_source;
 	private byte[] hash;
 		
@@ -40,6 +39,11 @@ public class RichDataSource implements DataSource {
 		throw new IOException("getOutputStream() not supported");
 	}
 
+	//========== Hash stuff - digest: ========================================
+	public void updateDigest(MessageDigest md) {
+		md.update(hash());
+	}
+
 	//========== Hash stuff: ========================================
 	private byte[] hash() {
 		if (hash==null) hash = computeHash();
@@ -48,12 +52,7 @@ public class RichDataSource implements DataSource {
 		
 	private static final Charset US_ASCII = Charset.forName("US-ASCII"); 
 	private byte[] computeHash() {
-		final MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-1");
-		} catch (NoSuchAlgorithmException anse) {
-			throw new RuntimeException(anse); // We expect SHA-1 to be available.
-		}
+		MessageDigest md = Digest.createSHA1();
 
 		// Process mimetype...
 		String mimetype = data_source.getContentType();
@@ -64,7 +63,7 @@ public class RichDataSource implements DataSource {
 
 		// Process contents...
 		try {
-			IO.updateDigest(md, data_source);
+			Digest.updateDigest(md, data_source);
 		} catch (IOException ioe) {
 			throw new RuntimeException(ioe); // What to do?
 		}
