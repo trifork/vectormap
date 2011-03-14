@@ -115,8 +115,8 @@ public class VectorMapTest {
 
 		raw_map.put("music", ve3);
 		VectorMap vmap3 = new VectorMap(raw_map);
- 		checkHash(vmap3, new byte[] {-99,58,-98,120,118,-97,29,-120,117,6,
-									 125,-115,100,-16,-23,-113,7,2,-31,-105});
+ 		checkHash(vmap3, new byte[] {-83,-120,-53,54,69,113,-43,-31,-20,44,
+									 -7,0,-124,-29,79, -109,62,-65,-120,-51});
 	}
 
 	private static void checkHash(Digestable data, byte[] expected_hash) {
@@ -156,7 +156,7 @@ M2b = vmap:store(<<"test">>, TextAsMimeTuple("Testing ÆØÅ"), M1).
 M2 = vmap:merge(M2a, M2b).
 
 M3a = vmap:store(<<"music">>, TextAsMimeTuple("Hello World"), vmap:new(<<"jens">>)).
-M3b = vmap:store(<<"music">>, TextAsMimeTuple("Hello World"), vmap:new(<<"preben">>)).
+M3b = vmap:store(<<"music">>, TextAsMimeTuple("Testing ÆØÅ"), vmap:new(<<"preben">>)).
 M3c = vmap:store(<<"music">>, TextAsMimeTuple("Music: ♩♪♬"), vmap:set_update_peer(<<"olaf">>, M2)).
 M3 = vmap:merge(M3a, vmap:merge(M3b, M3c)).
 
