@@ -21,6 +21,8 @@ public class VEntry implements Digestable {
 	public final VClock vClock;
 	public final RichDataSource[] values;
 
+	private final byte[] TOMBSTONE_HASH = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+
 	public VEntry(VClock vClock, RichDataSource[] ds) {
 		this.vClock = vClock;
 		this.values = ds;
@@ -33,7 +35,10 @@ public class VEntry implements Digestable {
 
 		// TODO: Add separators?
 		for (RichDataSource v : values) {
-			v.updateDigest(md);
+			if (v != null)
+				v.updateDigest(md);
+			else
+				md.update(TOMBSTONE_HASH);
 		}
 		vClock.updateDigest(md);
 	}
