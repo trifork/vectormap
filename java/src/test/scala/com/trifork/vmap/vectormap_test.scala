@@ -10,15 +10,20 @@ import org.specs.runner.JUnit4
 import scala.collection.immutable.Map
 
 import com.trifork.activation.ProtobufDataContentHandler
+import com.trifork.activation.Digest
 
 trait VMapGenerators extends VClockGenerators {
   def nullToNone[T](x:T) = Option.apply(x)
 
   type Update = (PeerName, String, Option[String]);
 
+  val genKey = Gen.frequency((1, Gen.choose(1,10) map {x=>x.toString}), // Get some key collisions
+			     (5, genSaneString))
+			     
+
   val genUpdate : Gen[Update] =
     for (p<-genPeerName;
-	 k<-genSaneString;
+	 k<-genKey;
 	 v<-Gen.oneOf(None, genSaneString map {x=>Some(x)}))
     yield (p,k,v);
 
@@ -49,11 +54,23 @@ trait VMapGenerators extends VClockGenerators {
     (performUpdate(vmap,update), performUpdate(map,update))
   }
 
+  def performUpdates(org:(VectorMap,Map[String,String]), updates:List[Update]) =
+    updates.foldLeft(org)(performUpdate(_,_))
+
+  def performUpdates(org:(VectorMap), updates:List[Update]) =
+    updates.foldLeft(org)(performUpdate(_,_))
+
   def genVMap : Gen[VectorMap] =
-    genUpdates map {_.foldLeft(new VectorMap())(performUpdate(_,_))};
+    genUpdates map {performUpdates(new VectorMap(), _)}
 
   implicit def arbVMap : Arbitrary[VectorMap] = Arbitrary(genVMap)
-    
+
+  def genUpdatePairWithDisjointKeyset =
+    for (u1 <- genUpdates; u2 <- genUpdates)
+    yield {
+      val filtered_u2 = u2 filter {case(_,k2,_)=> u1.forall {case (_,k1,_) => k1 != k2}};
+      (u1, filtered_u2)
+    }
 }
 
 // All JUnit4 tests must end with "Test"
@@ -133,7 +150,7 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
   }
 
   val nestedGetIsLikeMap =
-    (mainKey:String, updates : List[(PeerName, String, Option[String])]) =>
+    (mainKey:String, updates : List[Update]) =>
       {
 	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map());
 	initial._1.setThisPeer("main_editor");
@@ -152,8 +169,36 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
 
   "VectorMap" should {
     "support simple nested maps" >> check(forAll(for (u<-genUpdates;
-						      k<-genSaneString) yield (k,u))
+						      k<-genKey) yield (k,u))
 					  (x=>nestedGetIsLikeMap(x._1,x._2)))
   }
+
+  val hashIsMergeOrderAgnostic =
+    (vmap1:VectorMap, vmap2:VectorMap, vmap3:VectorMap) => {
+      val mrg1 = VectorMap.merge(vmap1, VectorMap.merge(vmap2, vmap3))
+      val mrg2 = VectorMap.merge(VectorMap.merge(vmap1, vmap2), vmap3)
+      Digest.digestOf(mrg1) sameElements Digest.digestOf(mrg2)
+    }
+
+  "VectorMap hash" should {
+    "be indifferent to merge order" >> check(
+      forAll(hashIsMergeOrderAgnostic))
+  }
+
+  /*
+  val hashIsUpdateOrderAgnostic = (updatePair: (List[Update], List[Update])) =>
+    updatePair match {case (u1,u2) => {
+      val m1 = performUpdates(performUpdates(new VectorMap(), u1), u2)
+      val m2 = performUpdates(performUpdates(new VectorMap(), u2), u1)
+      val r = Digest.digestOf(m1) sameElements Digest.digestOf(m2)
+      r
+    }
+   }
+
+  "VectorMap hash" should {
+    "be indifferent to update order" >> check(
+      forAll(genUpdatePairWithDisjointKeyset)(hashIsUpdateOrderAgnostic))
+  }
+  */
 
 }
