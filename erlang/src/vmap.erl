@@ -203,7 +203,7 @@ vmap_ensure_hash(#vmap{hash=undefined}=VMap) ->
     Context = vmap_digest(VMap, crypto:sha_init()),
     Hash=crypto:sha_final(Context),
     VMap#vmap{hash=Hash};
-vmap_ensure_hash(#vmap{hash= <<_:20>>}=VMap) ->
+vmap_ensure_hash(#vmap{hash= <<_:160>>}=VMap) ->
     VMap.
 
 vmap_digest(#vmap{dict=Dict}, Context) ->
