@@ -97,10 +97,26 @@ public class VectorMapTest {
 		VEntry ve3 = new VEntry(vc1, new RichDataSource[] {ds1, ds2, ds3});
 
 		HashMap<String,VEntry> raw_map = new HashMap<String,VEntry>();
+
+		VectorMap vmap0 = new VectorMap(raw_map);
+		// Compare with vmap:vmap_ensure_hash(vmap:new(<<"peer">>)).
+ 		checkHash(vmap0, new byte[] {-38,57,-93,-18,94,107,75,13,50,85,
+									 -65,-17,-107,96,24,-112,-81,-40,7,9});
+
 		raw_map.put("hello", ve1);
 		VectorMap vmap1 = new VectorMap(raw_map);
+ 		checkHash(vmap1, new byte[] {-88,26,-9,-13,-26,50,103,-41,114,23,
+									 61,118,-30,60,-105,19,124,-58,46,126});
 
- 		checkHash(vmap1, new byte[] {0}); //TODO!
+		raw_map.put("test", ve2);
+		VectorMap vmap2 = new VectorMap(raw_map);
+ 		checkHash(vmap2, new byte[] {29,-77,11,-112,-37,60,112,-22,94,47,
+									 -44,-20,125,-88,-36,-100,37,74,-72,68});
+
+		raw_map.put("music", ve3);
+		VectorMap vmap3 = new VectorMap(raw_map);
+ 		checkHash(vmap3, new byte[] {-99,58,-98,120,118,-97,29,-120,117,6,
+									 125,-115,100,-16,-23,-113,7,2,-31,-105});
 	}
 
 	private static void checkHash(Digestable data, byte[] expected_hash) {
@@ -111,3 +127,44 @@ public class VectorMapTest {
 		return RichDataSource.make(new DataHandler(object, mimetype).getDataSource());
 	}
 }
+
+
+/* Generating hash codes in Erlang shell:
+
+BinToJavaHash = fun(Bin) -> [(X+128) rem 256 - 128 || X <- binary_to_list(Bin)] end.
+
+rr("../src/vmap_internal.hrl").
+
+VC = [{<<"hans">>, 2, 800}, {<<"jens">>, 1, 1000}].
+BinToJavaHash(crypto:sha_final(vmap:vmap_digest_vclock(crypto:sha_init(), VC))).
+
+TEXT_UTF8 = <<"text/plain;charset=utf-8">>.
+ToUtf8 = fun(S) -> unicode:characters_to_binary(S, utf8) end.
+TextAsMime = fun(S) -> vmap:create_vmime(TEXT_UTF8, ToUtf8(S)) end.
+Val1 = TextAsMime("Hello World").
+Val2 = TextAsMime("Testing ÆØÅ").
+Val3 = TextAsMime("Music: ♩♪♬").
+VObjHash = fun(VObj)-> crypto:sha_final(vmap:vmap_digest_key_value({<<"">>, VObj}, crypto:sha_init())) end.
+BinToJavaHash(VObjHash(#vobj{vclock=VC, values=[Val1]})).
+BinToJavaHash(VObjHash(#vobj{vclock=VC, values=[Val1,Val2]})).
+BinToJavaHash(VObjHash(#vobj{vclock=VC, values=[Val1,Val2,Val3]})).
+
+TextAsMimeTuple = fun(S) -> {mime, TEXT_UTF8, ToUtf8(S)} end.
+M1 = vmap:store(<<"hello">>, TextAsMimeTuple("Hello World"), vmap:new(<<"hans">>)).
+M2a = vmap:store(<<"test">>, TextAsMimeTuple("Hello World"), vmap:new(<<"jens">>)).
+M2b = vmap:store(<<"test">>, TextAsMimeTuple("Testing ÆØÅ"), M1).
+M2 = vmap:merge(M2a, M2b).
+
+M3a = vmap:store(<<"music">>, TextAsMimeTuple("Hello World"), vmap:new(<<"jens">>)).
+M3b = vmap:store(<<"music">>, TextAsMimeTuple("Hello World"), vmap:new(<<"preben">>)).
+M3c = vmap:store(<<"music">>, TextAsMimeTuple("Music: ♩♪♬"), vmap:set_update_peer(<<"olaf">>, M2)).
+M3 = vmap:merge(M3a, vmap:merge(M3b, M3c)).
+
+PatchDict = fun(Dict,VClock) -> lists:map(fun({Key, Obj=#vobj{}}) -> {Key, Obj#vobj{vclock=VClock}} end, Dict) end.
+PatchMap = fun(VMap, VClock) -> (VMap#vmap{dict=PatchDict(VMap#vmap.dict, VClock)})#vmap{hash=undefined} end.
+
+BinToJavaHash((vmap:vmap_ensure_hash(PatchMap(M1, VC)))#vmap.hash).
+BinToJavaHash((vmap:vmap_ensure_hash(PatchMap(M2, VC)))#vmap.hash).
+BinToJavaHash((vmap:vmap_ensure_hash(PatchMap(M3, VC)))#vmap.hash).
+   
+ */
