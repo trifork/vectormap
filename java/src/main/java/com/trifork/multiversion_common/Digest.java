@@ -1,10 +1,5 @@
 package com.trifork.multiversion_common;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.activation.DataSource;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 

@@ -12,7 +12,6 @@ import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
 import com.trifork.multiversion_common.Digestable;
-import com.trifork.multiversion_common.IO;
 
 /** Multi-version value entry.
  */

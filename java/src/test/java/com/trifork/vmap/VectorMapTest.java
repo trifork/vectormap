@@ -1,7 +1,6 @@
 package com.trifork.vmap;
 
 import java.awt.datatransfer.UnsupportedFlavorException;
-import javax.activation.DataSource;
 import javax.activation.DataHandler;
 import java.io.IOException;
 import java.util.HashMap;
