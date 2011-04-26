@@ -11,6 +11,7 @@ import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteString.Output;
 import com.trifork.multiversion_common.IO;
+import com.trifork.multiversion_common.VClock;
 import com.trifork.vmap.protobuf.PB;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBValue;
@@ -68,10 +69,10 @@ public class PBEncoder {
 			PBClock.Builder cb = PBClock.newBuilder();
 			VClock c = clocks[i];
 	
-			for (int p = 0; p < c.peers.length; p++) {
-				cb.addNode(string_pool.get(c.peers[p]));
-				cb.addCounter(c.counters[p]);
-				cb.addUtcSecs(c.utc_secs[p]);				
+			for (int p = 0; p < c.size(); p++) {
+				cb.addNode(string_pool.get(c.getPeer(p)));
+				cb.addCounter(c.getCounter(p));
+				cb.addUtcSecs(c.getUtcSecs(p));				
 			}
 			
 			builder.addClockPool(cb);
@@ -121,8 +122,8 @@ public class PBEncoder {
 			if (o!=null) collectString(stringPool, o.getContentType());
 		}
 
-		for (String peer : ent.vClock.peers) {
-			collectString(stringPool, peer);
+		for (VClock.VClockEntry e : ent.vClock) {
+			collectString(stringPool, e.peer);
 		}
 		
 		if (!clockPool.containsKey(ent.vClock)) {

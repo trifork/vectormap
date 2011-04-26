@@ -9,6 +9,7 @@ import javax.activation.DataSource;
 
 import com.trifork.activation.BSDataSource;
 import com.trifork.activation.RichDataSource;
+import com.trifork.multiversion_common.VClock;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBEntry;
 import com.trifork.vmap.protobuf.PB.PBValue;

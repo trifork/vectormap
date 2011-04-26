@@ -10,6 +10,7 @@ import static org.junit.Assert.*;
 
 import com.trifork.multiversion_common.Digestable;
 import com.trifork.multiversion_common.Digest;
+import com.trifork.multiversion_common.VClock;
 import com.trifork.activation.RichDataSource;
 
 public class VectorMapTest {

@@ -12,6 +12,7 @@ import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.activation.ActivationUtil.Decoder;
 import com.trifork.multiversion_common.Digestable;
+import com.trifork.multiversion_common.VClock;
 
 /** Multi-version value entry.
  */
@@ -56,7 +57,7 @@ public class VEntry implements Digestable {
 
 	public static VEntry merge_concurrent(VEntry e1, VEntry e2) {
 		// Make e1 be the newest-by-max_secs entry:
-		if (e1.vClock.max_secs < e2.vClock.max_secs) {
+		if (e1.vClock.getMaxSecs() < e2.vClock.getMaxSecs()) {
 			VEntry tmp=e1; e1=e2; e2=tmp;
 		}
 

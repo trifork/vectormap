@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.trifork.vmap;
+package com.trifork.multiversion_common;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -9,12 +9,11 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collection;
+import java.util.Iterator;
 
 import java.security.MessageDigest;
 
-import com.trifork.multiversion_common.Digestable;
-
-public class VClock implements Digestable {
+public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 
 	final String[] peers;
 	final int[] counters;
@@ -57,6 +56,59 @@ public class VClock implements Digestable {
 		}
 	}
 
+	/*------------- Accessors --------------------------*/
+	public int size() {
+		return peers.length;
+	}
+	
+	public String getPeer(int nr) {
+		return peers[nr];
+	}
+
+	public int getCounter(int nr) {
+		return counters[nr];
+	}
+
+	public int getUtcSecs(int nr) {
+		return utc_secs[nr];
+	}
+
+	public int getMaxSecs() {
+		return max_secs;
+	}
+	
+	public Iterator<VClockEntry> iterator() {
+		return new Iterator<VClockEntry>() {
+			int pos = 0;
+			public boolean hasNext() {return pos < peers.length;}
+			public VClockEntry next() {
+				int nr = pos++;
+				return new VClockEntry(peers[nr], counters[nr], utc_secs[nr]);
+			}
+			public void remove() {throw new UnsupportedOperationException();}
+		};
+	}
+	
+	public static class VClockEntry 
+//	implements Map.Entry<String, Time>
+	{
+		public final String peer;
+		public final int counter;
+		public final int utc_secs;
+		
+		public VClockEntry(String peer, int counter, int utcSecs) {
+			super();
+			this.peer = peer;
+			this.counter = counter;
+			utc_secs = utcSecs;
+		}
+		
+//		public String getKey() {return peer;}
+//		public Time getValue() {return new Time(counter, utc_secs);}
+	}
+
+	/*--------------------------------------------------*/
+	
 	protected static int max(int[] xs) {
 		int max = Integer.MIN_VALUE;
  		for (int x : xs) max = Math.max(max, x);
@@ -236,8 +288,9 @@ public class VClock implements Digestable {
 	//==================== Construction helpers ====================
 
 	/** Convert an Entry set to a array, sorted by time. */
+	@SuppressWarnings("unchecked")
 	protected static Entry<String, Time>[] entriesByTime(Collection<Entry<String, Time>> org) {
-		Entry<String, Time>[] entries = (org.toArray(new Entry[org.size()]));
+		Entry<String, Time>[] entries = org.toArray(new Entry[org.size()]);
 		Arrays.sort(entries, VClock.BY_PEER);
 		return entries;
 	}

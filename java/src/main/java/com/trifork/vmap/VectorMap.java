@@ -21,6 +21,7 @@ import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.multiversion_common.Digest;
 import com.trifork.multiversion_common.Digestable;
+import com.trifork.multiversion_common.VClock;
 
 public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 
