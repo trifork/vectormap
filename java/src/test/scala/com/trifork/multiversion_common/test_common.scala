@@ -1,4 +1,4 @@
-package com.trifork.vmap
+package com.trifork.multiversion_common
 
 import junit.framework.TestResult
 import org.specs.runner.JUnit4

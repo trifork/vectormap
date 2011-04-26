@@ -1,6 +1,6 @@
-package com.trifork.vmap
+package com.trifork.multiversion_common
 
-import com.trifork.vmap.VClock.Time;
+import com.trifork.multiversion_common.VClock.Time;
 
 import org.scalacheck._
 import org.scalacheck.Prop._
