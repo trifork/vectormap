@@ -1,5 +1,9 @@
 package com.trifork.vmap
 
+import com.trifork.multiversion_common.AbstractTest
+import com.trifork.multiversion_common.MySpecification
+import com.trifork.multiversion_common.VClockGenerators
+
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.specs._
