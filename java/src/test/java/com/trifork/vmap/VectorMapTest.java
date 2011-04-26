@@ -9,8 +9,8 @@ import java.util.HashMap;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import com.trifork.activation.Digestable;
-import com.trifork.activation.Digest;
+import com.trifork.multiversion_common.Digestable;
+import com.trifork.multiversion_common.Digest;
 import com.trifork.activation.RichDataSource;
 
 public class VectorMapTest {

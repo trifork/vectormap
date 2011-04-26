@@ -9,6 +9,8 @@ import java.util.Comparator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import com.trifork.multiversion_common.Digest;
+import com.trifork.multiversion_common.Digestable;
 
 /** Decoration of a DataSource with a cached hash code computed from
  * the content-type and bytes of original.
@@ -64,7 +66,7 @@ public class RichDataSource implements DataSource, Digestable {
 
 		// Process contents...
 		try {
-			Digest.updateDigest(md, data_source);
+			ActivationUtil.updateDigest(md, data_source);
 		} catch (IOException ioe) {
 			throw new RuntimeException(ioe); // What to do?
 		}
@@ -96,15 +98,11 @@ public class RichDataSource implements DataSource, Digestable {
 		new ByHashComparator();
 	public static class ByHashComparator implements Comparator<RichDataSource> {
 		public int compare(RichDataSource ds1, RichDataSource ds2) {
-			byte[] hash1 = ds1.hash();
-			byte[] hash2 = ds2.hash();
+			// Handle nulls - place them first:
+			if (ds1 == null) return (ds2 == null)? 0 : -1;
+			if (ds2 == null) return 1;
 
-			// Compare bytes unsigned:
-			for (int i=0; i<20; i++) {
-				int diff = (hash1[i] & 0xff) - (hash2[i] & 0xff);
-				if (diff != 0) return diff;
-			}
-			return 0;			
+			return Digest.compareHashes(ds1.hash(), ds2.hash());
 		}
 	}
 

@@ -12,7 +12,7 @@ import java.util.Collection;
 
 import java.security.MessageDigest;
 
-import com.trifork.activation.Digestable;
+import com.trifork.multiversion_common.Digestable;
 
 public class VClock implements Digestable {
 

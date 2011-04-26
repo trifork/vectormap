@@ -17,10 +17,10 @@ import javax.activation.MimeTypeParseException;
 
 import javax.mail.util.ByteArrayDataSource;
 
-import com.trifork.activation.Digest;
-import com.trifork.activation.Digestable;
 import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
+import com.trifork.multiversion_common.Digest;
+import com.trifork.multiversion_common.Digestable;
 
 public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 

@@ -6,13 +6,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
 
 import javax.activation.DataSource;
 import javax.activation.CommandInfo;
 import javax.activation.CommandMap;
 import javax.activation.DataContentHandler;
 
-import com.trifork.activation.IO;
+import com.trifork.multiversion_common.IO;
 
 public abstract class ActivationUtil {
 
@@ -112,5 +113,22 @@ public abstract class ActivationUtil {
 		}
 		
 		throw new UnsupportedEncodingException();
+	}
+	
+	/** Perform a MessageDigest.update() on the contents of ds.
+	 *  Try to avoid copying when possible.
+	 */
+	public static void updateDigest(MessageDigest md, DataSource ds) throws IOException {
+		if (ds instanceof BSDataSource) {
+			md.update(((BSDataSource)ds).getByteBuffer());
+		} else { // Too bad we can't handle ByteArrayDataSource better as well...
+			InputStream is = ds.getInputStream();
+			byte[] buf = new byte[100];
+			int nread;
+			while ( (nread=is.read(buf)) > 0) {
+				md.update(buf, 0, nread);
+			}
+			is.close();
+		}
 	}
 }

@@ -10,7 +10,7 @@ import javax.activation.DataSource;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteString.Output;
-import com.trifork.activation.IO;
+import com.trifork.multiversion_common.IO;
 import com.trifork.vmap.protobuf.PB;
 import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBValue;

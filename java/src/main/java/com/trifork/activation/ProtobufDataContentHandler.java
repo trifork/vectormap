@@ -16,6 +16,8 @@ import com.google.protobuf.AbstractMessage;
 import com.trifork.vmap.PBDecoder;
 import com.trifork.vmap.PBEncoder;
 import com.trifork.vmap.VectorMap;
+import com.trifork.multiversion_common.IO;
+
 
 public class ProtobufDataContentHandler implements DataContentHandler {
 
