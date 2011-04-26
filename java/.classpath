@@ -11,7 +11,6 @@
   <classpathentry kind="var" path="M2_REPO/org/json/json/20090211/json-20090211.jar"/>
   <classpathentry kind="var" path="M2_REPO/junit/junit/4.8.2/junit-4.8.2.jar"/>
   <classpathentry kind="var" path="M2_REPO/protobuf/protobuf-codec-core/1.1/protobuf-codec-core-1.1.jar"/>
-  <classpathentry kind="var" path="M2_REPO/protobuf/protobuf-codec-json/1.1/protobuf-codec-json-1.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/google/protobuf/protobuf-java/2.3.0/protobuf-java-2.3.0.jar" sourcepath="M2_REPO/com/google/protobuf/protobuf-java/2.3.0/protobuf-java-2.3.0-sources.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/scala-lang/scala-compiler/2.8.1/scala-compiler-2.8.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/scala-lang/scala-library/2.8.1/scala-library-2.8.1.jar"/>
