@@ -10,7 +10,7 @@ import org.specs.runner.JUnit4
 import scala.collection.immutable.Map
 
 import com.trifork.activation.ProtobufDataContentHandler
-import com.trifork.activation.Digest
+import com.trifork.multiversion_common.Digest
 
 trait VMapGenerators extends VClockGenerators {
   def nullToNone[T](x:T) = Option.apply(x)
