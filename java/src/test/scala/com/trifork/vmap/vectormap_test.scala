@@ -13,6 +13,8 @@ import org.specs.runner.JUnit4
 
 import scala.collection.immutable.Map
 
+import com.google.protobuf.ByteString;
+
 import com.trifork.activation.ProtobufDataContentHandler
 import com.trifork.multiversion_common.Digest
 
@@ -157,7 +159,7 @@ object VectorMapSpec extends MySpecification with VClockGenerators with VMapGene
     (mainKey:String, updates : List[Update]) =>
       {
 	val initial : (VectorMap,Map[String,String]) = (new VectorMap(), Map());
-	initial._1.setThisPeer("main_editor");
+	initial._1.setThisPeer(ByteString.copyFromUtf8("main_editor"));
 	initial._1.put2(mainKey, new VectorMap())
 	val (vmap, map) = updates.foldLeft(initial)(performSimpleNestedUpdate(mainKey,_,_));
 

@@ -13,17 +13,19 @@ import java.util.Iterator;
 
 import java.security.MessageDigest;
 
+import com.google.protobuf.ByteString;
+
 public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 
-	final String[] peers;
+	final ByteString[] peers;
 	final int[] counters;
 	final int[] utc_secs;
 	final int max_secs;
 
 	/** OBS: Parameter is mutated (sorted). */
-	public VClock(Entry<String, Time>[] ents) {
+	public VClock(Entry<ByteString, Time>[] ents) {
 		Arrays.sort(ents, BY_PEER);
-		this.peers = new String[ents.length];
+		this.peers = new ByteString[ents.length];
 		this.counters = new int[ents.length];
 		this.utc_secs = new int[ents.length];
 		
@@ -35,11 +37,11 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		this.max_secs = max(utc_secs);
 	}
 
-	public VClock(Map<String, Time> map) {
+	public VClock(Map<ByteString, Time> map) {
 		this(entriesByTime(map.entrySet()));
 	}
 
-	public VClock(String[] peers, int[] counters, int[] times) {
+	public VClock(ByteString[] peers, int[] counters, int[] times) {
 		if (peers.length != counters.length ||
 			peers.length != times.length)
 			throw new IllegalArgumentException("VClock: array lengths do not match: "+peers.length+"/"+counters.length+"/"+times.length);
@@ -50,8 +52,8 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		this.max_secs = max(utc_secs);
 
 		for (int i=1; i<peers.length; i++) {
-			if (peers[i].compareTo(peers[i-1]) <= 0)
-				throw new IllegalArgumentException("VClock: entries are not sorrted by peer name: "+this);
+			if (CompareUtil.compareByteStrings(peers[i], peers[i-1]) <= 0)
+				throw new IllegalArgumentException("VClock: entries are not sorted by peer name: "+this);
 			// TODO: Handle more gracefully?
 		}
 	}
@@ -61,7 +63,7 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		return peers.length;
 	}
 	
-	public String getPeer(int nr) {
+	public ByteString getPeer(int nr) {
 		return peers[nr];
 	}
 
@@ -89,14 +91,12 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		};
 	}
 	
-	public static class VClockEntry 
-//	implements Map.Entry<String, Time>
-	{
-		public final String peer;
+	public static class VClockEntry /* implements Map.Entry<ByteString, Time> */ {
+		public final ByteString peer;
 		public final int counter;
 		public final int utc_secs;
 		
-		public VClockEntry(String peer, int counter, int utcSecs) {
+		public VClockEntry(ByteString peer, int counter, int utcSecs) {
 			super();
 			this.peer = peer;
 			this.counter = counter;
@@ -108,7 +108,7 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 	}
 
 	/*--------------------------------------------------*/
-	
+
 	protected static int max(int[] xs) {
 		int max = Integer.MIN_VALUE;
  		for (int x : xs) max = Math.max(max, x);
@@ -154,7 +154,7 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		}
 	}
 
-	public void timeStamp(String peer) {
+	public void timeStamp(ByteString peer) {
 		for (int i = 0; i < peers.length; i++) {
 			if (peers[i].equals(peer)) {
 				utc_secs[i] = (int) (System.currentTimeMillis()/1000);
@@ -192,7 +192,7 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 	//==================== LUB computation ====================
 
 	/** Update lowest upper bound. */
-	public Map<String, Time> updateLUB(Map<String, Time> lub) {
+	public Map<ByteString, Time> updateLUB(Map<ByteString, Time> lub) {
 		for (int i = 0; i < peers.length; i++) {
 			Time t = lub.get(peers[i]);
 
@@ -210,14 +210,14 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		return lub;
 	}
 
-	public static Map<String,Time> incrementForPeer(Map<String,Time> map, String peer) {
+	public static Map<ByteString,Time> incrementForPeer(Map<ByteString,Time> map, ByteString peer) {
 		map.put(peer, Time.increment(map.get(peer)));
 		return map;
 	}
 
 	/** Binary LUB operator. */
 	public static VClock lub(VClock a, VClock b) {
-		return new VClock(b.updateLUB(a.updateLUB(new HashMap<String,Time>())));
+		return new VClock(b.updateLUB(a.updateLUB(new HashMap<ByteString,Time>())));
 	}
 
 
@@ -234,9 +234,9 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 
 		int i1 = 0, i2 = 0;
 		while (i1 < len1 && i2 < len2) {
-			String peer1 = vc1.peers[i1];
-			String peer2 = vc2.peers[i2];
-			int peercmp = peer1.compareTo(peer2);
+			ByteString peer1 = vc1.peers[i1];
+			ByteString peer2 = vc2.peers[i2];
+			int peercmp = CompareUtil.compareByteStrings(peer1, peer2);
 			if (peercmp == 0) {
 				int cnt1 = vc1.counters[i1];
 				int cnt2 = vc2.counters[i2];
@@ -276,7 +276,7 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		try {
 			for (int i=0; i<peers.length; i++) {
 				// TODO: Perhaps use a CharsetEncoder instead.
-				md.update(peers[i].getBytes("UTF-8"));
+				md.update(peers[i].asReadOnlyByteBuffer());
 				md.update(String.valueOf(counters[i]).getBytes("US-ASCII"));
 				md.update(String.valueOf(utc_secs[i]).getBytes("US-ASCII"));
 			}
@@ -288,27 +288,26 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 	//==================== Construction helpers ====================
 
 	/** Convert an Entry set to a array, sorted by time. */
-	@SuppressWarnings("unchecked")
-	protected static Entry<String, Time>[] entriesByTime(Collection<Entry<String, Time>> org) {
-		Entry<String, Time>[] entries = org.toArray(new Entry[org.size()]);
+	protected static Entry<ByteString, Time>[] entriesByTime(Collection<Entry<ByteString, Time>> org) {
+		Entry<ByteString, Time>[] entries = org.toArray((Entry<ByteString, Time>[]) new Entry[org.size()]);
 		Arrays.sort(entries, VClock.BY_PEER);
 		return entries;
 	}
 
-	final static Comparator<Entry<String, Time>> BY_PEER =
-		new Comparator<Entry<String, Time>>() {
+	final static Comparator<Entry<ByteString, Time>> BY_PEER =
+		new Comparator<Entry<ByteString, Time>>() {
 			@Override
-			public int compare(Entry<String, Time> o1, Entry<String, Time> o2) {
-				String peer1 = o1.getKey();
-				String peer2 = o2.getKey();
-				return peer1.compareTo(peer2);
+			public int compare(Entry<ByteString, Time> o1, Entry<ByteString, Time> o2) {
+				ByteString peer1 = o1.getKey();
+				ByteString peer2 = o2.getKey();
+				return CompareUtil.compareByteStrings(peer1, peer2);
 			}
 	};
 
-	final static Comparator<Entry<String, Time>> BY_TIME =
-		new Comparator<Entry<String, Time>>() {
+	final static Comparator<Entry<ByteString, Time>> BY_TIME =
+		new Comparator<Entry<ByteString, Time>>() {
 			@Override
-			public int compare(Entry<String, Time> o1, Entry<String, Time> o2) {
+			public int compare(Entry<ByteString, Time> o1, Entry<ByteString, Time> o2) {
 				int time1 = o1.getValue().time;
 				int time2 = o2.getValue().time;
 				if (time1 > time2) {

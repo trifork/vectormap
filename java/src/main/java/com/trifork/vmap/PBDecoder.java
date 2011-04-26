@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.activation.DataSource;
 
+import com.google.protobuf.ByteString;
 import com.trifork.activation.BSDataSource;
 import com.trifork.activation.RichDataSource;
 import com.trifork.multiversion_common.VClock;
@@ -47,12 +48,12 @@ public class PBDecoder {
 
 		int length = pbc.getCounterCount();
 
-		String[] peers = new String[length];
+		ByteString[] peers = new ByteString[length];
 		int[] counters = new int[length];
 		int[] times = new int[length];
 
 		for (int i = 0; i < length; i++) {
-			peers[i] = vm.getStringPool(pbc.getNode(i));
+			peers[i] = ByteString.copyFromUtf8((vm.getStringPool(pbc.getNode(i)))); //TODO: store as 'bytes' ?
 			counters[i] = pbc.getCounter(i);
 			times[i] = pbc.getUtcSecs(i);
 		}

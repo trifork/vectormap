@@ -70,7 +70,7 @@ public class PBEncoder {
 			VClock c = clocks[i];
 	
 			for (int p = 0; p < c.size(); p++) {
-				cb.addNode(string_pool.get(c.getPeer(p)));
+				cb.addNode(string_pool.get(c.getPeer(p).toStringUtf8()));
 				cb.addCounter(c.getCounter(p));
 				cb.addUtcSecs(c.getUtcSecs(p));				
 			}
@@ -123,7 +123,7 @@ public class PBEncoder {
 		}
 
 		for (VClock.VClockEntry e : ent.vClock) {
-			collectString(stringPool, e.peer);
+			collectString(stringPool, e.peer.toStringUtf8()); // TODO: peers in string pool?
 		}
 		
 		if (!clockPool.containsKey(ent.vClock)) {
@@ -132,6 +132,7 @@ public class PBEncoder {
 	}
 
 	private static void collectString(Map<String, Integer> stringPool, String string) {
+		if (string==null) throw new NullPointerException();
 		if (!stringPool.containsKey(string)) {
 			stringPool.put(string, stringPool.size());
 		}

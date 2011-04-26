@@ -17,6 +17,7 @@ import javax.activation.MimeTypeParseException;
 
 import javax.mail.util.ByteArrayDataSource;
 
+import com.google.protobuf.ByteString;
 import com.trifork.activation.RichDataSource;
 import com.trifork.activation.ActivationUtil;
 import com.trifork.multiversion_common.Digest;
@@ -25,7 +26,7 @@ import com.trifork.multiversion_common.VClock;
 
 public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 
-	private String thisPeer;
+	private ByteString thisPeer;
 	Map<String, VEntry> content;
 	private VClock update_vclock;
 	private byte[] hash;
@@ -34,17 +35,17 @@ public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 		this.content = content;
 	}
 
-	protected VectorMap(String thisPeer, Map<String, VEntry> content) {
+	protected VectorMap(ByteString thisPeer, Map<String, VEntry> content) {
 		this.content = content;
 		setThisPeer(thisPeer);
 	}
 
-	public void setThisPeer(String thisPeer2) {
+	public void setThisPeer(ByteString thisPeer2) {
 		this.thisPeer = thisPeer2;
 		this.update_vclock = computeUpdateVClock();
 	}
 
-	public VectorMap(String thisPeer) throws IOException {
+	public VectorMap(ByteString thisPeer) throws IOException {
 		this(thisPeer, new HashMap<String, VEntry>());
 	}
 
@@ -57,7 +58,7 @@ public class VectorMap implements MergeableValue<VectorMap>, Digestable {
 	}
 
 	private VClock computeUpdateVClock() {
-		Map<String, VClock.Time> lub = new HashMap<String, VClock.Time>();
+		Map<ByteString, VClock.Time> lub = new HashMap<ByteString, VClock.Time>();
 		for (VEntry ent : content.values()) {
 			ent.vClock.updateLUB(lub);
 		}

@@ -11,19 +11,21 @@ import org.specs.runner.JUnit4
 
 import java.util.HashMap;
 
+import com.google.protobuf.ByteString;
+
 trait VClockGenerators {
-  case class VClockMapEntry(val key:String, var value:Time) extends java.util.Map.Entry[String,Time] {
+  case class VClockMapEntry(val key:ByteString, var value:Time) extends java.util.Map.Entry[ByteString,Time] {
     def getKey() = key
     def getValue() = value
     def setValue(v:Time) = {val old = value; value = v; old}
   }
 
-  def genPeer = {
+  def genPeer : Gen[ByteString] = {
     Gen.sized (s => Gen.frequency((  1, Gen.value("jens")),
 				  (  1, Gen.value("peter")),
 				  (  1, Gen.value("hans")),
 				  (  1, Gen.alphaStr),
-				  (5*s, Gen.choose(1,100*s) map {"thomas"+_})))
+				  (5*s, Gen.choose(1,100*s) map {"thomas"+_}))) map ByteString.copyFromUtf8
   }
 
   def genCount = Gen.oneOf(Gen.choose(0,5), Gen.choose(0,100));
@@ -31,7 +33,7 @@ trait VClockGenerators {
   val now : Int = (System.currentTimeMillis()/1000).asInstanceOf[Int]
   def genTimestamp = for (r<-Gen.choose(-20,20)) yield now+r
 
-  type VClockEntry = (String, Int, Int)
+  type VClockEntry = (ByteString, Int, Int)
   val genVClockEntry : Gen[VClockEntry] =
     for (p<-genPeer; c<-genCount; t<-genTimestamp) yield (p,c,t)
 
@@ -42,7 +44,7 @@ trait VClockGenerators {
     }
     val entriesGen : Gen[Array[VClockEntry]] = Gen.containerOf[Array, VClockEntry](genVClockEntry) suchThat namesAreDistinct
     entriesGen map {e=>
-		    val entries : Array[java.util.Map.Entry[String,Time]] =
+		    val entries : Array[java.util.Map.Entry[ByteString,Time]] =
 		      e map {case (p,c,t) => VClockMapEntry(p, new Time(c,t))}
 		    new VClock(entries)
 		  }
@@ -57,7 +59,7 @@ trait VClockGenerators {
    implicit def unwrapSaneString(x:SaneString) : String = x.string;
    implicit val arbSaneString: Arbitrary[SaneString] = Arbitrary(genSaneString map {x=>SaneString(x)})
 
-  case class PeerName(name:String);
+  case class PeerName(name:ByteString);
   def genPeerName : Gen[PeerName] = genPeer map {x=>PeerName(x)}
   implicit def arbPeerName : Arbitrary[PeerName] = Arbitrary(genPeerName)
 
@@ -70,7 +72,7 @@ trait VClockGenerators {
 class VClockTest extends AbstractTest(VClockSpec);
 
 object VClockSpec extends MySpecification with VClockGenerators {
-  type TimeMap = HashMap[String,Time];
+  type TimeMap = HashMap[ByteString,Time];
 
   def updateAs(vc:VClock, peer:PeerName) : VClock = {
     val map = new TimeMap();

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.google.protobuf.ByteString;
 import com.trifork.multiversion_common.Digestable;
 import com.trifork.multiversion_common.Digest;
 import com.trifork.multiversion_common.VClock;
@@ -20,7 +21,7 @@ public class VectorMapTest {
 	{
 		VectorMap vm = new VectorMap();
 		
-		vm.setThisPeer("kresten");
+		vm.setThisPeer(ByteString.copyFromUtf8("kresten"));
 		
 		vm.put("foo",  "Hello!");
 		String fooism = vm.get("foo", String.class);
@@ -31,9 +32,9 @@ public class VectorMapTest {
 	}
 
 	private static VClock createVClock1() {
-		HashMap<String,VClock.Time> vc1_entries = new HashMap();
-		vc1_entries.put("jens", new VClock.Time(1,1000));
-		vc1_entries.put("hans", new VClock.Time(2, 800));
+		HashMap<ByteString,VClock.Time> vc1_entries = new HashMap();
+		vc1_entries.put(ByteString.copyFromUtf8("jens"), new VClock.Time(1,1000));
+		vc1_entries.put(ByteString.copyFromUtf8("hans"), new VClock.Time(2, 800));
 		return new VClock(vc1_entries);
 	}
 
