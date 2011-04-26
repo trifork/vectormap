@@ -1,4 +1,4 @@
-package com.trifork.activation;
+package com.trifork.multiversion_common;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,20 +31,13 @@ public abstract class Digest {
 	}
 
 
-	/** Perform a MessageDigest.update() on the contents of ds.
-	 *  Try to avoid copying when possible.
-	 */
-	public static void updateDigest(MessageDigest md, DataSource ds) throws IOException {
-		if (ds instanceof BSDataSource) {
-			md.update(((BSDataSource)ds).getByteBuffer());
-		} else { // Too bad we can't handle ByteArrayDataSource better as well...
-			InputStream is = ds.getInputStream();
-			byte[] buf = new byte[100];
-			int nread;
-			while ( (nread=is.read(buf)) > 0) {
-				md.update(buf, 0, nread);
-			}
-			is.close();
+	public static int compareHashes(byte[] hash1, byte[] hash2) {
+		// Compare bytes unsigned:
+		for (int i=0; i<20; i++) {
+			int diff = (hash1[i] & 0xff) - (hash2[i] & 0xff);
+			if (diff != 0) return diff;
 		}
+		return 0;
 	}
+
 }

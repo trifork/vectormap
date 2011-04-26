@@ -1,4 +1,4 @@
-package com.trifork.activation;
+package com.trifork.multiversion_common;
 
 import java.io.IOException;
 import java.io.InputStream;
