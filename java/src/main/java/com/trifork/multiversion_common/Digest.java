@@ -3,6 +3,8 @@ package com.trifork.multiversion_common;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import com.google.protobuf.ByteString;
+
 public abstract class Digest {
 
 	public static MessageDigest createSHA1() {
@@ -22,6 +24,12 @@ public abstract class Digest {
 	public static byte[] digestOf(byte[] data) {
 		MessageDigest md = createSHA1();
 		md.update(data);
+		return md.digest();
+	}
+
+	public static byte[] digestOf(ByteString data) {
+		MessageDigest md = createSHA1();
+		md.update(data.asReadOnlyByteBuffer());
 		return md.digest();
 	}
 
