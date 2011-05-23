@@ -12,8 +12,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteString.Output;
 import com.trifork.multiversion_common.IO;
 import com.trifork.multiversion_common.VClock;
+import com.trifork.multiversion_common.VClockPBUtil;
 import com.trifork.vmap.protobuf.PB;
-import com.trifork.vmap.protobuf.PB.PBClock;
 import com.trifork.vmap.protobuf.PB.PBValue;
 import com.trifork.vmap.protobuf.PB.PBVectorMap;
 
@@ -64,18 +64,9 @@ public class PBEncoder {
 		for (Map.Entry<VClock, Integer> ent : clock_pool.entrySet()) {
 			clocks[ent.getValue()] = ent.getKey();
 		}
-		for (int i = 0; i < clocks.length; i++) {
-			
-			PBClock.Builder cb = PBClock.newBuilder();
-			VClock c = clocks[i];
-	
-			for (int p = 0; p < c.size(); p++) {
-				cb.addNode(string_pool.get(c.getPeer(p).toStringUtf8()));
-				cb.addCounter(c.getCounter(p));
-				cb.addUtcSecs(c.getUtcSecs(p));				
-			}
-			
-			builder.addClockPool(cb);
+		
+		for (VClock clock : clocks) {
+			builder.addClockPool(VClockPBUtil.encodeVClock(string_pool, clock));
 		}
 		
 		// Emit Entries
