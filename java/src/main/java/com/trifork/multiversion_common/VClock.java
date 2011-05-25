@@ -220,6 +220,13 @@ public class VClock implements Digestable, Iterable<VClock.VClockEntry> {
 		return new VClock(b.updateLUB(a.updateLUB(new HashMap<ByteString,Time>())));
 	}
 
+	/** Unary increment operator */
+	public VClock incrementForPeer(ByteString peer) {
+		return new VClock(incrementForPeer(updateLUB(new HashMap<ByteString,Time>()),
+										   peer));
+	}
+
+
 
 	//==================== Comparison ====================
 	public static final int SAME       = 0;
